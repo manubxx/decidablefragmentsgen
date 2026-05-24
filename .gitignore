@@ -1,0 +1,16 @@
+# Cartelle di build di CMake e Visual Studio
+/out/
+/build/
+/.vs/
+/CMakeFiles/
+
+# File binari ed eseguibili
+*.exe
+*.obj
+*.pdb
+*.ilk
+*.lib
+
+# Altri file di sistema o configurazioni locali
+CMakeSettings.json
+CompilerIdCXX/

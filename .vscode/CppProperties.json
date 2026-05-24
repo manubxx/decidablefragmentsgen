@@ -1,0 +1,12 @@
+{
+  "configurations": [
+    {
+      "name": "Windows-MSVC",
+      "includePath": [
+        "${workspaceFolder}/**"
+      ],
+      "intelliSenseMode": "windows-msvc-x64",
+      "cppStandard": "c++17"
+    }
+  ]
+}

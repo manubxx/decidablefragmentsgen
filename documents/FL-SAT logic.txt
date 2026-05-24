@@ -1,0 +1,43 @@
+The fluted fragment is a fragment of first-order logic in which the arguments of all atomic formulas appear in a fixed order, corresponding to the variables under whose scope those atomic formulas lie. The decidability of the fluted fragment is not a consequence of any finite model property in the usual sense, but rather follows from constraints on variable-occurrence.
+
+SAT:
+To prove satisfiability, we must incrementally construct a satisfying structure by processing the formula according to its fluted hierarchy. In this framework, the satisfaction of a formula phi depends strictly on the 'type' of the tuple assigned to its free variables. The construction of the model proceeds simultaneously with the decomposition of the formula, where each step requires verifying which atomic types are realized by the elements.
+(model-construction-based technique)
+
+Mortimer's bound difference: Unlike the two-variable fragment, where Mortimer’s bound guarantees a finite model whose size is bounded by a fixed exponential function of the formula's length, the fluted fragment exhibits non-elementary complexity. A model cannot be blindly projected from a pre-determined set of elements; instead, the satisfying structure must be tailored and witnessed during the incremental evaluation of the fluted steps.
+
+
+Riferimento teorico:
+Pratt-Hartmann, Szwast, Tendera - "The Fluted Fragment Revisited"
+Pratt-Hartmann - Fluted Logic with Counting)
+
+
+Implementazione:
+generateSATFull:
+		 1- Costruzione del modello
+                 2- Target del quantificatore radice
+                 3- Quantificatori aggiuntivi per raggiungere stackdepth minimo
+                 4- BuildSAT
+                 5- Ricostruzione dell'AST 
+
+buildSAT:
+	         1- Calcolo predicati ammissibili per lo stackdepth
+		 2- scelta del simbolo tramite budget
+                 3- buildXXSAT per gestire target di ogni simbolo
+		 4- caso base e arresto: buildAtomicSAT, buildForcedQuantSAT
+
+
+buildAtomicSAT: 
+		 1- Calcolo predicati ammissibili e shuffle
+		 2- Ricerca del predicato uniformemente vero o falso (model.evalAtom(...))
+                 3- Se non esiste, best-effort: ricerca del predicato che soddisfa piu target possibili
+              
+
+buildForcedQuantSAT:
+		 1- Genera un quantificatore per cambiare l'arità corrente
+                 2- passa il nuovo bodyTargets a buildSAT
+
+
+
+
+

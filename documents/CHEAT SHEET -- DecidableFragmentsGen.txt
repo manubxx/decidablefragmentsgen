@@ -1,0 +1,40 @@
+CHEAT SHEET -- DecidableFragmentsGen
+-----------------------------------------------------------------------------------------------------
+
+--fragment <nome>	default: fo2		fo2,fluted
+--mode <modo>	        default: free	        free, sat, unsat
+--depth <n>	        default: 3, min: 0	Profondità albero sintattico
+--count <n>	        default: 5, min: 1	Numero di formule da generare
+--seed <n>	        default: casuale	Seme per riproducibilità dei risultati
+--help	
+
+
+Struttura formula budget esatto
+--and <n>		Nodi AND
+--or <n>		Nodi OR
+--not <n>		Nodi NOT
+--eq <n>		Nodi EQUALITY
+--exists <n>		Quantificatori ∃
+--forall <n>		Quantificatori ∀
+--implies <n>		Connettivi =>
+
+Vocabolario & output
+--preds x/y             default: default vocab   (es. 3/1 5/4)
+--arity <val>    	default: mixed	      1(unari), 2 (binari), mixed 
+--domain-size <n>	default: auto	       Dimensione dominio modello finito
+--transform <t> 	default: none	       none, nnf 
+--output <fmt>	        default: leggibil      leggibile, tptp 
+
+Verifica Vampire
+--verify
+--vampire-path path
+--vampire-timeout n
+ 
+
+---------------------------------------------------------------------------------------------------------
+
+ESEMPI RAPIDI:
+./DecidableFragmentsGen  --fragment fo2  --mode free  --depth 4  --count 5  --seed 42
+./DecidableFragmentsGen --fragment fo2  --mode sat  --depth 4  --count 3   --exists 2  --forall 1  --and 1  --seed 100
+./DecidableFragmentsGen   --fragment fo2   --mode sat   --depth 4   --count 5  --exists 1  --forall 1   --implies 1   --output tptp   --seed 200
+  

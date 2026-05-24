@@ -1,0 +1,38 @@
+BuildXXSAT - Gestione della target propagation SAT per ogni simbolo
+
+buildAndSAT: 
+             1- Passare gli stessi targets ad entrambi i rami left e right con buildSAT(depth-1,targets,...)
+             2- return BinaryConnNode left AND right
+
+buildOrSAT:
+             1-Partizionamento dei targets in leftT e rightT
+             2-Passare i target lefT al ramo left, e i target rightT al ramo right con buildSAT(depth-1, leftT/rightT, ...)
+             3- return left OR right - la formula globale dell'OR sarà vera per l'intero insieme dei target iniziali
+
+buildExistsSAT:
+             1- calcola i predicati ammissibili al livello successivo
+             2- prende un elemento del dominio(e) e lo assegna ad extended
+             3- cicla sui predicati ammissibili al livello successivo e interroga il modello model.evalAtom(..)
+             4- se esiste il predicato vero per quell'elemento e allora viene scelto come witness.
+             5- il testimone scelto viene inserito nella bodyTargets e viene lanciato buildSAT(...)
+             6- return exists var e body
+
+buildForAllSAT:
+             1- prodotto cartesiano dei target
+             2- buildSAT(...) sul nuovo bodyTargets
+
+buildImpliesSAT:
+             1- Partizionamento dei target in falseTargets e trueTargets
+             2- Guardia: se il prodotto cartesiano è troppo grande, trattanto l'implicazione come un OR
+             3- Altrimenti, calcolo tutti gli  assegnamenti del dominio e sottrae false target
+             4- ritornando una lista antecedentTargets, l'antecedente è vero sul complemento quindi
+                chiamiamo antecedent = buildSAT(antecedentTargets,...)
+                          consequent = buildSAT(trueTargets)
+
+buildNegSAT (CRITICITA'):
+             1-Guardia di sicurezza dell'ImpliesSAT
+             2- Genera tutte le combinazioni del modello e rimuove i target iniziali ottenendo complement.
+             3- passa buildSAT(.., complement,...) a child
+            CRITICITA': calcolare il complemento richiede di generare uno spazio che cresce in modo esponenziale 
+            D^stackdepth. il passo 1 è un tentativo di difesa
+            

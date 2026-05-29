@@ -1,7 +1,6 @@
 #pragma once
 #include <string>
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  VampireRunner
 
 //  La formula deve essere già in formato TPTP 
@@ -15,7 +14,7 @@
 //    Timeout             — limite di tempo superato
 //    Unknown             — Vampire non ha trovato una risposta
 //    Error               — errore interno al runner (Vampire non trovato, ecc.)
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 class VampireRunner {
 public:

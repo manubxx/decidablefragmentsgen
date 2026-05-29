@@ -8,10 +8,12 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <fstream>
+
 
 namespace {
 
-    // ──── Naming automatico dei predicati ────
+    // Naming automatico dei predicati
     std::string predName(int arity, int index)
     {
         if (arity >= 1 && arity <= 25) {
@@ -21,7 +23,7 @@ namespace {
         return "P" + std::to_string(arity) + "_" + std::to_string(index);
     }
 
-    // ──── Parsing mode ────
+    //  Parsing mode 
     GenMode parseMode(const std::string& s)
     {
         if (s == "sat")   return GenMode::SAT;
@@ -31,7 +33,7 @@ namespace {
             "Modalita' non riconosciuta: '" + s + "' (valori: free, sat, unsat)");
     }
 
-    // ──── Parsing transform ────
+    // Parsing transform
     TransformMode parseTransform(const std::string& s)
     {
         if (s == "none") return TransformMode::NONE;
@@ -40,7 +42,7 @@ namespace {
             "Transform non riconosciuto: '" + s + "' (valori: none, nnf)");
     }
 
-    // ──── Parsing output format ────
+    // Parsing output format 
     OutputFormat parseOutput(const std::string& s)
     {
         if (s == "default") return OutputFormat::DEFAULT;
@@ -49,8 +51,8 @@ namespace {
             "Formato output non riconosciuto: '" + s + "' (valori: default, tptp)");
     }
 
-    // ──── Parsing budget range ────
-    BudgetRange parseRange(const std::string& s)
+    //Parsing budget range 
+     BudgetRange parseRange(const std::string& s)
     {
         auto colon = s.find(':');
         if (colon == std::string::npos) {
@@ -66,7 +68,7 @@ namespace {
         return r;
     }
 
-    // ──── Parsing --preds ────
+    //  Parsing --preds 
     //  Formato: <count>/<arity>
     std::vector<PredInfo> parsePreds(const std::string& s, const std::string& fragment)
     {
@@ -131,7 +133,7 @@ namespace {
         return vocab;
     }
 
-    // ──── Parsing --arity ────
+    // Parsing --arity
     int parseArityFilter(const std::string& s, const std::string& fragment)
     {
         if (s == "mixed") return 0;
@@ -154,7 +156,7 @@ namespace {
         return k;
     }
 
-    // ──── Validazione semantica post-parsing ────
+    // Validazione semantica post-parsing 
     void validateArgs(const AppArgs& a)
     {
         if (a.cfg.depth < 0)
@@ -174,30 +176,19 @@ namespace {
             throw std::invalid_argument(msg + ".");
         }
 
-        if (a.cfg.mode == GenMode::SAT && a.cfg.domainSize == 0) {
-            // Costruiamo il messaggio con il suggerimento sui modelli
-            std::string msg =
-                "\nErrore: --domain-size e' obbligatorio in modalita' SAT.\n\n"
-                "  Spazio dei modelli su dominio di dimensione n:\n"
-                "      prod_{P in sigma} 2^(n^arita'(P))\n\n";
-
-            msg += "\n  Usa: --domain-size 2  (o 3, 4, ...)\n";
-            throw std::logic_error(msg);
-        }
-
         // Budget
         a.cfg.budget.validate();   // lancia std::invalid_argument se min > max
     }
 
-} // ──── CHIUSURA DEL NAMESPACE ANONIMO ────
+} // Chiusura del namespace
 
 
-// ──── Forward declarations esterne (Spestate nel Namespace Globale) ────
+// Forward declarations esterne
 extern const std::vector<PredInfo> kVocabFO2;
 extern const std::vector<PredInfo> kVocabFluted;
 
 
-// ──── Riapertura di un namespace anonimo locale per buildVocab e printUsage ────
+
 namespace {
 
     std::vector<PredInfo> buildVocab(const std::string& fragment,
@@ -218,101 +209,50 @@ namespace {
         return result;
     }
 
+
+
+
     static void printUsage(const char* prog)
     {
-        std::cerr
-            << "\nUSO:\n"
-            << "  " << prog << " [opzioni]\n\n"
+        // Apre il file di testo
+        std::ifstream file("usage.txt");
 
-            << "OPZIONI BASE:\n"
-            << "  --fragment <nome>        Frammento logico (default: fo2)\n"
-            << "                             fo2    = Two-Variable Fragment\n"
-            << "                             fluted = Fluted Fragment\n"
-            << "                             guarded = Guarded Fragment\n"
-            << "                             unaryneg = Unary Negation Fragment\n"
-            << "  --mode <modo>            Modalita' di generazione (default: free)\n"
-            << "                             free   = formule casuali\n"
-            << "                             sat    = formule soddisfacibili\n"
-            << "                             unsat  = formule insoddisfacibili\n"
-            << "  --depth <n>              Profondita' max albero sintattico (default: 3)\n"
-            << "  --count <n>              Numero di formule da generare (default: 5)\n"
-            << "  --seed <n>               Seme per riproducibilita' (default: casuale)\n"
-            << "  --help                   Mostra questo messaggio ed esce\n\n"
+        // Se il file non viene trovato nella cartella corrente, mostra un avviso
+        if (!file.is_open()) {
+            std::cerr << "Errore: Impossibile trovare il file 'usage.txt'.\n"
+                << "Assicurati che sia nella stessa cartella di " << prog << "\n";
+            return;
+        }
 
-            << "OPZIONI STRUTTURA FORMULA:\n"
-            << "  --and <n|min:max>        Nodi AND: esatti o intervallo \n"
-            << "  --or <n|min:max>         Nodi OR\n"
-            << "  --not <n|min:max>        Nodi NOT\n"
-            << "  --exists <n|min:max>     Quantificatori EXISTS\n"
-            << "  --forall <n|min:max>     Quantificatori FORALL\n"
-            << "  --implies <n|min:max>    Connettivi IMPLIES\n"
-            << "  --eq <n|min:max>         Atomi di uguaglianza (=)\n"
-            << "                           In FL ammessi solo con stackDepth >= 2.\n"
+        std::string line;
+        // Legge il file riga per riga tramite il getline
+        while (std::getline(file, line)) {
 
-            << "OPZIONI VOCABOLARIO:\n"
-            << "  --preds <count>/<arita'>                                       .\n"
-            << "                           Specifica il vocabolario esplicitamente.\n"
-            << "                           Esempio:\n"
-            << "                             --preds 3/1,2/2      (3 unari + 2 binari)\n"
-            << "                           In FO2 l'arita' massima e' 2.\n"
-            << "                           In FL l'arita' e' arbitraria (k >= 1).\n"
-            << "                           Se omesso, viene usato il vocabolario di default.\n"
-            << "  --arity <k|mixed>        Filtra i predicati del vocabolario per arita'.\n"
-            << "                             mixed = tutti (default)\n"
-            << "                             k     = solo predicati di arita' k\n"
-            << "                           Applicato DOPO --preds (o il vocabolario default).\n"
-            << "  --domain-size <n>        Dimensione dominio modello finito.\n"
-            << "                           OBBLIGATORIO in modalita' SAT.\n"
+            // Cerca se nella riga corrente esiste il tag "{prog}"
+            size_t pos = line.find("{prog}");
+            while (pos != std::string::npos) {
+                // Sostituisce "{prog}" (6 caratteri) con il nome reale (es. "DecidableFragmentsGen")
+                line.replace(pos, 6, prog);
+                // Cerca se ci sono altri "{prog}" nella stessa riga (es. nella sezione ESEMPI)
+                pos = line.find("{prog}", pos + strlen(prog));
+            }
 
-            << "OPZIONI TRASFORMAZIONE:\n"
-            << "  --transform <mode>       (default: none)\n"
-            << "                             none = nessuna trasformazione\n"
-            << "                             nnf  = Negation Normal Form\n\n"
-
-            << "OPZIONI OUTPUT:\n"
-            << "  --output <formato>       (default: default)\n"
-            << "                             default = formato leggibile interno\n"
-            << "                             tptp    = formato TPTP\n\n"
-
-            << "OPZIONI VERIFICA (Vampire):\n"
-            << "  --verify                 Verifica ogni formula con Vampire.\n"
-            << "  --vampire-path <path>    Percorso eseguibile Vampire (default: vampire).\n"
-            << "  --vampire-timeout <n>    Timeout in secondi (default: 10).\n\n"
-
-            << "ESEMPI:\n"
-            << "  " << prog << " --fragment fo2 --mode sat --depth 3 --count 5 --domain-size 3\n"
-            << "  " << prog << " --fragment fluted --mode sat --depth 4 --domain-size 3\n"
-            << "  " << prog << " --fragment fo2 --mode sat --depth 3 --domain-size 3 --verify\n\n"
-
-            << "NOTE GENERALI:\n"
-            << "  - In modalita' SAT il quantificatore radice NON e' contato\n"
-            << "    da --exists/--forall. In FL i quantificatori strutturali\n"
-            << "    aggiuntivi (necessari per arita' alta) non sono contati.\n"
-            << "  - In modalita' UNSAT (phi AND NOT phi), AND e NOT radice\n"
-            << "    SONO contati da --and/--not.\n"
-            << "  - --eq controlla il numero di atomi di uguaglianza (x=y).\n"
-            << "    In FL l'uguaglianza e' ammissibile solo quando lo stackDepth\n"
-            << "    corrente e' >= 2 (almeno due variabili nello stack).\n\n"
-
-            << "NOTE SUL FLUTED FRAGMENT:\n"
-            << "  - Predicati di arita' k ammissibili solo con stackDepth >= k.\n"
-            << "  - Il generatore aggiunge automaticamente quantificatori\n"
-            << "    strutturali alla radice se minArity(vocab) > 1.\n"
-            << "  - Finite model property garantita (Pratt-Hartmann et al. 2019).\n\n";
+            // Stampa la riga corretta sul terminale
+            std::cerr << line << "\n";
+        }
     }
 
 } // namespace
 
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  parseArgs 
-// ─────────────────────────────────────────────────────────────────────────────
+
+// function parseArgs
 AppArgs parseArgs(int argc, char* argv[])
 {
     // Raccolta dei parametri
     struct RawParam {
         std::string flag;
-        std::string value;   // vuoto per flag booleani (--verify, --help)
+        std::string value;   // flag booleani (--verify, --help)
     };
     std::vector<RawParam> parameters;
 
@@ -356,7 +296,7 @@ AppArgs parseArgs(int argc, char* argv[])
 
     if (fragment == "fl") fragment = "fluted";
 
-    // ──── Parsing dei flag ────
+    // Parsing dei flag
     AppArgs args;
     args.fragment = fragment;
 

@@ -1,0 +1,75 @@
+USO:
+  {prog} [opzioni]
+
+OPZIONI BASE:
+  --fragment <nome>        Frammento logico (default: fo2)
+                             fo2    = Two-Variable Fragment
+                             fluted = Fluted Fragment
+                             guarded = Guarded Fragment
+                             unaryneg = Unary Negation Fragment
+  --mode <modo>            Modalita' di generazione (default: free)
+                             free   = formule casuali
+                             sat    = formule soddisfacibili
+                             unsat  = formule insoddisfacibili
+  --depth <n>              Profondita' max albero sintattico (default: 3)
+  --count <n>              Numero di formule da generare (default: 5)
+  --seed <n>               Seme per riproducibilita' (default: casuale)
+  --help                   Mostra questo messaggio ed esce
+
+OPZIONI STRUTTURA FORMULA:
+  --and <n|min:max>        Nodi AND: esatti o intervallo 
+  --or <n|min:max>         Nodi OR
+  --not <n|min:max>        Nodi NOT
+  --exists <n|min:max>     Quantificatori EXISTS
+  --forall <n|min:max>     Quantificatori FORALL
+  --implies <n|min:max>    Connettivi IMPLIES
+  --eq <n|min:max>         Atomi di uguaglianza =
+                           In FL ammessi solo con stackDepth >= 2.
+
+OPZIONI VOCABOLARIO:
+  --preds <count>/<arita'>                                       .
+                           Specifica il vocabolario esplicitamente.
+                           Esempio:
+                             --preds 3/1,2/2      (3 unari + 2 binari)
+                           In FO2 l'arita' massima e' 2.
+                           In FL l'arita' e' arbitraria (k >= 1).
+                           Se omesso, viene usato il vocabolario di default.
+  --arity <k|mixed>        Filtra i predicati del vocabolario per arita'.
+                             mixed = tutti (default)
+                             k     = solo predicati di arita' k
+
+OPZIONI TRASFORMAZIONE:
+  --transform <mode>       (default: none)
+                             none = nessuna trasformazione
+                             nnf  = Negation Normal Form
+
+OPZIONI OUTPUT:
+  --output <formato>       (default: default)
+                             default = formato leggibile interno
+                             tptp    = formato TPTP
+
+OPZIONI VERIFICA (Vampire):
+  --verify                 Verifica ogni formula con Vampire.
+  --vampire-path <path>    Percorso eseguibile Vampire (default: vampire).
+  --vampire-timeout <n>    Timeout in secondi (default: 10).
+
+ESEMPI:
+  {prog} --fragment fo2 --mode sat --depth 3 --count 5 --domain-size 3
+  {prog} --fragment fluted --mode sat --depth 4 --domain-size 3
+  {prog} --fragment fo2 --mode sat --depth 3 --domain-size 3 --verify
+
+NOTE GENERALI:
+  - In modalita' SAT il quantificatore radice NON e' contato
+    da --exists/--forall. In FL i quantificatori strutturali
+    aggiuntivi (necessari per arita' alta) non sono contati.
+  - In modalita' UNSAT (phi AND NOT phi), AND e NOT radice
+    SONO contati da --and/--not.
+  - --eq controlla il numero di atomi di uguaglianza (x=y).
+    In FL l'uguaglianza e' ammissibile solo quando lo stackDepth
+    corrente e' >= 2 (almeno due variabili nello stack).
+
+NOTE SUL FLUTED FRAGMENT:
+  - Predicati di arita' k ammissibili solo con stackDepth >= k.
+  - Il generatore aggiunge automaticamente quantificatori
+    strutturali alla radice se minArity(vocab) > 1.
+  - Finite model property garantita (Pratt-Hartmann et al. 2019).

@@ -18,7 +18,7 @@
 #  define PCLOSE pclose
 #endif
 
-// ──── Constructor ────
+// Constructor
 
 VampireRunner::VampireRunner(std::string vampirePath)
 {
@@ -36,14 +36,14 @@ VampireRunner::VampireRunner(std::string vampirePath)
 #endif
 }
 
-// ──── isAvailable ────
+//isAvailable 
 
 bool VampireRunner::isAvailable() const
 {
     return std::filesystem::exists(vampirePath_);
 }
 
-// ──── run ────
+// run
 
 VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
     int timeLimitSec) const
@@ -79,7 +79,7 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
         ofs << tptpFormula << "\n";
     }
 
-    // ──── Comando Vampire ────
+    // Comando Vampire
     //
     //  Opzioni usate:
     //    --mode casc          : modalita' di prova standard (CASC)
@@ -112,7 +112,7 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
     std::string cmd = cmdStream.str();
     
 
-    // ──── Esegue e restituisce l'output ────
+    // Esegue e restituisce l'output 
 
     FILE* pipe = POPEN(cmd.c_str(), "r");
     if (!pipe) {
@@ -152,7 +152,7 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
     return result;
 }
 
-// ──── extractSZSStatus ────
+// extractSZSStatus
 // Vampire stampa lo status nel formato:
 //   % SZS status <Status> for <problem>
 

@@ -1,23 +1,77 @@
-#include "cli/CliArgs.hpp"
-#include "cli/CliPrinter.hpp"
+#include "CLI/CLIArgs.hpp"
+#include "CLI/CLIPrinter.hpp"
 #include "fragments/fo2/FO2Generator.hpp"
 #include "fragments/fluted/FlutedGenerator.hpp"
 #include "vampire/VampireRunner.hpp"
 #include <iostream>
 
 template <typename Gen>
-static int runGenerator(Gen& gen, const GenConfig& cfg, int count,
-                        bool verify, const VampireRunner* runner, int timeout)
+static int runGenerator(Gen & gen, const GenConfig & cfg, int count,
+    bool verify, const VampireRunner * runner, int timeout)
 {
     int failures = 0;
-    for (int i = 1; i <= count; ++i) {
-        try {
-            std::string formula = gen.generateFormatted(cfg);
-            printFormula(i, cfg, formula, verify, runner, timeout);
-        } catch (const std::exception& e) {
-            std::cerr << "  Errore generazione formula " << i
-                      << ": " << e.what() << "\n\n";
+    int generatedCount = 0;
+    const int MAX_ATTEMPTS = 50; // Soglia di retry per formula
+
+    while (generatedCount < count) {
+        int attempts = 0;
+        bool formulaAccepted = false;
+        std::string formula;
+
+        while (!formulaAccepted && attempts < MAX_ATTEMPTS) {
+            ++attempts;
+            try {
+                // Genera la formula in modo puramente sintattico
+                formula = gen.generateFormatted(cfg);
+
+                // Se non serve verificare o l'output non è TPTP, la accettiamo subito
+                if (!verify || !runner || cfg.output != OutputFormat::TPTP) {
+                    formulaAccepted = true;
+                    break;
+                }
+
+                // Controllo Semantico Centralizzato con Vampire
+                auto res = runner->run(formula, timeout);
+                if (res.runError) {
+                    std::cerr << "  [ERRORE VAMPIRE] " << res.rawOutput << "\n";
+                    continue;
+                }
+
+                // Logica di validazione basata sulla modalità richiesta
+                if (cfg.mode == GenMode::SAT) {
+                    if (res.status == "Satisfiable" || res.status == "CounterSatisfiable") {
+                        formulaAccepted = true;
+                    }
+                    // Se UNSAT o Timeout, il ciclo continua e rigenera
+                }
+                else if (cfg.mode == GenMode::UNSAT) {
+                    if (res.status == "Unsatisfiable") {
+                        formulaAccepted = true;
+                    }
+                }
+                else {
+                    // Modalità FREE: accettiamo qualsiasi risultato valido da Vampire
+                    formulaAccepted = true;
+                }
+
+            }
+            catch (const std::exception& e) {
+                // Fallimento del budget o errore interno di buildFL/buildFO2
+                continue;
+            }
+        }
+
+        if (formulaAccepted) {
+            ++generatedCount;
+            // Adesso printFormula si limita a stampare a schermo la formula 
+            // e il report finale del runner senza rieseguire il binario!
+            printFormula(generatedCount, cfg, formula, verify, runner, timeout);
+        }
+        else {
+            std::cerr << "[-] Impossibile generare una formula valida per l'indice "
+                << (generatedCount + 1) << " dopo " << MAX_ATTEMPTS << " tentativi.\n";
             ++failures;
+            ++generatedCount;
         }
     }
     return failures;

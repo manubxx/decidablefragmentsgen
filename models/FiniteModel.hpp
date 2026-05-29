@@ -67,7 +67,7 @@ public:
         }
     }
 
-    //  ──── Public Interface ────
+    //  Public Interface
     [[nodiscard]] const std::vector<std::string>& domain() const
     {
         return domain_;
@@ -88,7 +88,7 @@ public:
         return interp_.at(pred).at(tuple);
     }
 
-    // Valuta un atomo con una tupla di elementi già risolti (senza varAssign).
+    // Valuta un atomo con una tupla di elementi già risolti
     [[nodiscard]] bool evalAtomDirect(
         const std::string& pred,
         const std::vector<std::string>& tuple) const

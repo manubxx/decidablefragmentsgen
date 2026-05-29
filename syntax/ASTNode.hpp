@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <algorithm> // Incluso per std::tolower/std::toupper se necessario
+#include <algorithm>
 
-//  ASTNode // Gerarchia di nodi per l'albero sintattico astratto
+//  ASTNode: Abstract Syntax Tree
 class ASTNode {
 public:
     virtual ~ASTNode() = default;
@@ -18,7 +18,7 @@ public:
     [[nodiscard]] virtual std::unique_ptr<ASTNode> toNNF(bool negated = false) const = 0;
 };
 
-// Dichiarazione anticipata (Forward Declaration) utile per i puntatori
+// Forward Declaration
 class NegNode;
 
 // AtomicNode
@@ -78,7 +78,7 @@ private:
     }
 };
 
-// ──── EqualityNode ───
+// EqualityNode 
 class EqualityNode final : public ASTNode {
 public:
     EqualityNode(Symbol lhs, Symbol rhs)
@@ -105,7 +105,6 @@ public:
         return std::make_unique<EqualityNode>(lhs_, rhs_);
     }
 
-    // L'implementazione è stata spostata in fondo al file per risolvere l'errore
     [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
 
 private:
@@ -251,14 +250,13 @@ private:
 };
 
 
-// ──── Definizioni delle funzioni inline in fondo per evitare problemi di dipendenza ────
+// inline functions
 
 inline std::unique_ptr<ASTNode> AtomicNode::toNNF(bool negated) const {
     if (!negated) return clone();
     return std::make_unique<NegNode>(clone());
 }
 
-// Ora che NegNode è stato interamente dichiarato, EqualityNode può usarlo qui!
 inline std::unique_ptr<ASTNode> EqualityNode::toNNF(bool negated) const {
     if (!negated) return clone();
     return std::make_unique<NegNode>(clone());

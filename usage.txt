@@ -1,5 +1,5 @@
 USO:
-  {prog} [opzioni]
+ ./DecidableFragmentsGen <opzioni>
 
 OPZIONI BASE:
   --fragment <nome>        Frammento logico (default: fo2)
@@ -54,9 +54,9 @@ OPZIONI VERIFICA (Vampire):
   --vampire-timeout <n>    Timeout in secondi (default: 10).
 
 ESEMPI:
-  {prog} --fragment fo2 --mode sat --depth 3 --count 5 --domain-size 3
-  {prog} --fragment fluted --mode sat --depth 4 --domain-size 3
-  {prog} --fragment fo2 --mode sat --depth 3 --domain-size 3 --verify
+  ./DecidableFragmentsGen --fragment fo2 --mode sat --depth 3 --count 5 --domain-size 3
+  ./DecidableFragmentsGen --fragment fluted --mode sat --depth 4 --domain-size 3
+  ./DecidableFragmentsGen --fragment fo2 --mode sat --depth 3 --domain-size 3 --verify
 
 NOTE GENERALI:
   - In modalita' SAT il quantificatore radice NON e' contato

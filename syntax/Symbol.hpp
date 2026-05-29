@@ -2,9 +2,7 @@
 #include <string>
 #include <stdexcept>
 
-
 //  Tipi di simbolo del linguaggio FOL
-//  (condivisi da tutti i frammenti)
 enum class SymbolType {
     LPAREN,    // (
     RPAREN,    // )
@@ -14,18 +12,12 @@ enum class SymbolType {
     EXISTS,    // ∃   (stampato come E)
     AND,       // ∧   (stampato come &)
     OR,        // ∨   (stampato come |)
+    EQUALITY,  // = 
     PREDICATE, // P, Q, R, ...  (con arità)
     VARIABLE,  // x, y, v1, v2, ...
-    EQUALITY,  // =   (predicato binario speciale, semantica fissa)
 };
 
-
-//  Symbol — unità del linguaggio.
-//  Ogni simbolo conosce:
-//   - il proprio tipo 
-//   - il proprio nome stampabile 
-//   - la propria arità 
-//   - il proprio contributo alla funzione K
+//  Symbol - unità del linguaggio.
 struct Symbol {
     SymbolType  type;
     std::string name;
@@ -48,7 +40,7 @@ struct Symbol {
         throw std::logic_error("SymbolType sconosciuto");
     }
 
-    // Factory statiche
+    // Static factories
     static Symbol lparen()  { return {SymbolType::LPAREN,   "("}; }
     static Symbol rparen()  { return {SymbolType::RPAREN,   ")"}; }
     static Symbol neg()     { return {SymbolType::NEG,      "~"}; }

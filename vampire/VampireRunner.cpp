@@ -27,8 +27,8 @@ VampireRunner::VampireRunner(std::string vampirePath)
         return;
     }
 
-    // Nessun percorso fornito: usa VAMPIRE_DEFAULT_PATH se definito da CMake,
-    // altrimenti fallback a "vampire" (ricerca nel PATH di sistema).
+    // Nessun percorso fornito: usa VAMPIRE_DEFAULT_PATH
+    // altrimenti fallback a "vampire"
 #ifdef VAMPIRE_DEFAULT_PATH
     vampirePath_ = VAMPIRE_DEFAULT_PATH;
 #else

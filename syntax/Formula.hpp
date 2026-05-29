@@ -4,7 +4,7 @@
 #include <string>
 
 
-//  Formula — sequenza ordinata di Symbol
+//  Formula- sequenza ordinata di Symbol
 class Formula {
 public:
     using Tokens = std::vector<Symbol>;
@@ -15,15 +15,13 @@ public:
     [[nodiscard]] const Tokens& tokens() const { return tokens_; }
     [[nodiscard]] std::size_t   size()   const { return tokens_.size(); }
 
-    // funzione K somma
     [[nodiscard]] int totalKValue() const {
         int sum = 0;
         for (const auto& s : tokens_) sum += s.kValue();
         return sum;
     }
 
-    //  Validazione
-    //  Condizioni necessarie e sufficienti per essere una wff:
+    //  Validazione:condizioni necessarie e sufficienti per essere una wff:
     //   1) La sequenza non è vuota
     //   2) Ogni prefisso PROPRIO ha somma K <= 0
     //   3) La somma TOTALE è esattamente 1

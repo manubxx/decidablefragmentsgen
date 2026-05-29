@@ -63,8 +63,6 @@ static int runGenerator(Gen & gen, const GenConfig & cfg, int count,
 
         if (formulaAccepted) {
             ++generatedCount;
-            // Adesso printFormula si limita a stampare a schermo la formula 
-            // e il report finale del runner senza rieseguire il binario!
             printFormula(generatedCount, cfg, formula, verify, runner, timeout);
         }
         else {

@@ -23,17 +23,17 @@ namespace {
         return "P" + std::to_string(arity) + "_" + std::to_string(index);
     }
 
-    //  Parsing mode 
+    //  command --mode 
     GenMode parseMode(const std::string& s)
     {
         if (s == "sat")   return GenMode::SAT;
         if (s == "unsat") return GenMode::UNSAT;
         if (s == "free")  return GenMode::FREE;
         throw std::invalid_argument(
-            "Modalita' non riconosciuta: '" + s + "' (valori: free, sat, unsat)");
+            "Modalita' non riconosciuta: '" + s + "' (consentiti: free, sat, unsat)");
     }
 
-    // Parsing transform
+    // command --transform
     TransformMode parseTransform(const std::string& s)
     {
         if (s == "none") return TransformMode::NONE;
@@ -42,7 +42,7 @@ namespace {
             "Transform non riconosciuto: '" + s + "' (valori: none, nnf)");
     }
 
-    // Parsing output format 
+    // command --output
     OutputFormat parseOutput(const std::string& s)
     {
         if (s == "default") return OutputFormat::DEFAULT;
@@ -68,7 +68,7 @@ namespace {
         return r;
     }
 
-    //  Parsing --preds 
+    //  command --preds 
     //  Formato: <count>/<arity>
     std::vector<PredInfo> parsePreds(const std::string& s, const std::string& fragment)
     {
@@ -96,8 +96,7 @@ namespace {
             auto slash = spec.find('/');
             if (slash == std::string::npos)
                 throw std::invalid_argument(
-                    "--preds: formato non valido '" + spec +
-                    "' (atteso: <count>/<arita'>, es. 3/2)");
+                    "--preds: formato non valido");
 
             int count, arity;
             try {
@@ -111,15 +110,13 @@ namespace {
 
             if (count < 1)
                 throw std::invalid_argument(
-                    "--preds: il numero di predicati deve essere >= 1 (in '" + spec + "')");
+                    "--preds: il numero di predicati deve essere >= 1");
             if (arity < 1)
                 throw std::invalid_argument(
-                    "--preds: l'arita' deve essere >= 1 (in '" + spec + "')");
+                    "--preds: l'arita' deve essere >= 1");
             if (fragment == "fo2" && arity > 2)
                 throw std::invalid_argument(
-                    "--preds: FO2 ammette solo predicati di arita' 1 o 2. "
-                    "Arita' " + std::to_string(arity) + " non ammessa.\n"
-                    "  Usa --fragment fluted per arita' arbitraria.");
+                    "--preds: FO2 ammette solo predicati di arita' 1 o 2.");
 
             // Indice di partenza per il naming
             int startIdx = 1;
@@ -133,7 +130,7 @@ namespace {
         return vocab;
     }
 
-    // Parsing --arity
+    // command --arity
     int parseArityFilter(const std::string& s, const std::string& fragment)
     {
         if (s == "mixed") return 0;
@@ -183,7 +180,7 @@ namespace {
 } // Chiusura del namespace
 
 
-// Forward declarations esterne
+// Forward declarations
 extern const std::vector<PredInfo> kVocabFO2;
 extern const std::vector<PredInfo> kVocabFluted;
 
@@ -212,34 +209,16 @@ namespace {
 
 
 
-    static void printUsage(const char* prog)
-    {
-        // Apre il file di testo
+    static void printUsage() {
         std::ifstream file("usage.txt");
 
-        // Se il file non viene trovato nella cartella corrente, mostra un avviso
         if (!file.is_open()) {
-            std::cerr << "Errore: Impossibile trovare il file 'usage.txt'.\n"
-                << "Assicurati che sia nella stessa cartella di " << prog << "\n";
+            std::cerr << "Errore: Impossibile trovare il file 'usage.txt'.\n";
             return;
         }
 
-        std::string line;
-        // Legge il file riga per riga tramite il getline
-        while (std::getline(file, line)) {
-
-            // Cerca se nella riga corrente esiste il tag "{prog}"
-            size_t pos = line.find("{prog}");
-            while (pos != std::string::npos) {
-                // Sostituisce "{prog}" (6 caratteri) con il nome reale (es. "DecidableFragmentsGen")
-                line.replace(pos, 6, prog);
-                // Cerca se ci sono altri "{prog}" nella stessa riga (es. nella sezione ESEMPI)
-                pos = line.find("{prog}", pos + strlen(prog));
-            }
-
-            // Stampa la riga corretta sul terminale
-            std::cerr << line << "\n";
-        }
+        // Stampa l'intero file in un colpo solo
+        std::cerr << file.rdbuf();
     }
 
 } // namespace
@@ -276,7 +255,7 @@ AppArgs parseArgs(int argc, char* argv[])
     // Check --help 
     for (const auto& t : parameters) {
         if (t.flag == "--help") {
-            printUsage(argv[0]);
+            printUsage;
             throw HelpRequest{};
         }
     }
@@ -361,6 +340,5 @@ AppArgs parseArgs(int argc, char* argv[])
 
     // Validazione semantica
     validateArgs(args);
-
     return args;
 }

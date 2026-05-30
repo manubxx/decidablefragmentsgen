@@ -46,7 +46,7 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
             "FlutedGenerator: nessun predicato con arita' " +
             std::to_string(cfg.arityFilter) + " nel vocabolario");
 
-    // ── Helper: applica trasformazioni finali e serializzazione ──────────────
+    //  applica trasformazioni finali e serializzazione
     auto finalize = [&](std::unique_ptr<ASTNode> f, const std::string& tptpRole) -> std::string {
         if (cfg.transform == TransformMode::NNF)
             f = f->toNNF(false);
@@ -55,11 +55,10 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
         return f->toString();
         };
 
-    // ════════════════════════════════════════════════════════════════════════
+    
     //  FREE e SAT (generazione sintattica base)
-    // ════════════════════════════════════════════════════════════════════════
-    // Ora SAT delega qui la generazione.Sarà il runGenerator
-    // a validare l'esito semantico con Vampire ed effettuare l'eventuale retry.
+    // il runGenerator validerà l'esito semantico con Vampire ed effettuare retry.
+   
     if (cfg.mode == GenMode::FREE || cfg.mode == GenMode::SAT) {
         static constexpr int MAX_RETRY = 500;
         std::unique_ptr<ASTNode> formula;

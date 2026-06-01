@@ -9,7 +9,7 @@
 //   --preds 3/1,2/2,1/3,...   (3 pred. arità 1, 2 arità 2, 1 arità 3,...)
 
 
-inline const std::vector<PredInfo> kVocabFluted = {
+inline const std::vector<PredInfo> kVocabFL = {
     // arità 1 — ammissibili da stackDepth >= 1
     { "Q", 1 },
     { "S", 1 },

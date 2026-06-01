@@ -4,12 +4,12 @@
 
 static constexpr int MAX_RETRY = 500;
 
-// ──── Constructor ────
+// Constructor
 FormulaBuilder::FormulaBuilder(unsigned seed)
     : rng_(seed) {
 }
 
-// ──── generateFormatted ────
+// generateFormatted 
 std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
     std::unique_ptr<ASTNode> formula;
     bool budgetOk = false;
@@ -66,7 +66,7 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
 }
 
 
-// ──── generateUNSAT ────
+// generateUNSAT
 std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& budget) {
     if (budget.and_left == 0)
         throw std::logic_error("generateUNSAT: budget AND esaurito");
@@ -82,7 +82,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     auto phi = build(childDepth, startVar(), budget);
     auto copy = phi->clone();
 
-    // Applica il delta consumato da φ una seconda volta per il clone.
+    // Applica il delta consumato una seconda volta per il clone.
     auto applyDelta = [](int& current, int budget_old, int budget_new) {
         if (budget_old > 0) current = std::max(0, current - (budget_old - budget_new));
         };
@@ -99,7 +99,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
         Symbol::and_(), std::move(phi), std::make_unique<NegNode>(std::move(copy)));
 }
 
-// ──── candidateTypes ────
+// candidateTypes
 std::vector<SymbolType> FormulaBuilder::candidateTypes(int depth, const BudgetState& bs) const {
     if (depth == 0) return {};
 
@@ -116,7 +116,7 @@ std::vector<SymbolType> FormulaBuilder::candidateTypes(int depth, const BudgetSt
     return candidates;
 }
 
-// ──── pickType ────
+// pickType
 SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget) {
     auto candidates = candidateTypes(depth, budget);
 
@@ -145,7 +145,7 @@ SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget) {
     return chosen;
 }
 
-// ──── build ────
+// build 
 std::unique_ptr<ASTNode> FormulaBuilder::build(int depth, const std::string& currentVar, BudgetState& budget) {
     if (depth == 0)
         return buildAtomic(currentVar);
@@ -197,7 +197,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::build(int depth, const std::string& cur
     }
 }
 
-// ──── randInt ────
+// randInt 
 int FormulaBuilder::randInt(int lo, int hi) {
     return std::uniform_int_distribution<int>(lo, hi)(rng_);
 }

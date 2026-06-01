@@ -64,7 +64,7 @@ struct NodeBudget {
     [[nodiscard]] int totalMin() const {
         int t = 0;
         auto add = [&](const BudgetRange& r) { if (r.min >= 0) t += r.min; };
-        add(and_count); add(or_count);     add(not_count);
+        add(and_count); add(or_count); add(not_count);
         add(exists_count); add(forall_count); add(implies_count);
         return t;
     }

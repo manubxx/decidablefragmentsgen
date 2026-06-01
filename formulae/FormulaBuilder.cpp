@@ -11,6 +11,7 @@ FormulaBuilder::FormulaBuilder(unsigned seed)
 
 // generateFormatted 
 std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
+
     std::unique_ptr<ASTNode> formula;
     bool budgetOk = false;
 
@@ -28,31 +29,27 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
             case GenMode::UNSAT:
                 formula = generateUNSAT(cfg.depth, bs);
                 break;
-            }
-        }
+            }}
+
         catch (const std::exception&) {
-            continue;
-        }
+            continue;}
 
         if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
             budgetOk = true;
-            break;
-        }
+            break;}
     }
 
     if (cfg.budget.hasAnyConstraint() && !budgetOk)
         throw std::invalid_argument(
-            fragmentName() + ": impossibile soddisfare il budget richiesto "
-            "con depth=" + std::to_string(cfg.depth) +
-            ". Aumenta --depth o riduci i vincoli.");
+            "Cannot satisfy the requested budget. Increase --depth or reduce constraints.");
 
     if (!formula) return "";
 
-    // Trasformazione
+    // Transformations
     if (cfg.transform == TransformMode::NNF)
         formula = formula->toNNF(false);
 
-    // Formattazione TPTP
+    // TPTP Formatting
     if (cfg.output == OutputFormat::TPTP) {
         std::string role;
         switch (cfg.mode) {
@@ -69,9 +66,9 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
 // generateUNSAT
 std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& budget) {
     if (budget.and_left == 0)
-        throw std::logic_error("generateUNSAT: budget AND esaurito");
+        throw std::logic_error("generateUNSAT: budget AND exhausted");
     if (budget.not_left == 0)
-        throw std::logic_error("generateUNSAT: budget NOT esaurito");
+        throw std::logic_error("generateUNSAT: budget NOT exhausted");
 
     budget.consume(SymbolType::AND);
     budget.consume(SymbolType::NEG);
@@ -82,10 +79,9 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     auto phi = build(childDepth, startVar(), budget);
     auto copy = phi->clone();
 
-    // Applica il delta consumato una seconda volta per il clone.
+    // Apply the consumed delta a second time to the clone.
     auto applyDelta = [](int& current, int budget_old, int budget_new) {
-        if (budget_old > 0) current = std::max(0, current - (budget_old - budget_new));
-        };
+        if (budget_old > 0) current = std::max(0, current - (budget_old - budget_new));  };
 
     applyDelta(budget.and_left,     lastbudget.and_left,     budget.and_left);
     applyDelta(budget.or_left,      lastbudget.or_left,      budget.or_left);

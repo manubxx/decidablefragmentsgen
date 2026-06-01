@@ -15,15 +15,11 @@ protected:
 
     [[nodiscard]] std::string startVar() const override { return "v1"; }
 
-    [[nodiscard]] std::string nextVar(const std::string& v) const override {
-        return (v == "v1") ? "v2" : "v1";
-    }
+    [[nodiscard]] std::string nextVar(const std::string& v) const override { return (v == "v1") ? "v2" : "v1";}
 
-    [[nodiscard]] std::unique_ptr<AtomicNode>
-        buildAtomic(const std::string& currentVar) override;
+    [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;
 
-    [[nodiscard]] std::unique_ptr<ASTNode>
-        generateSAT(int depth, int domainSize, BudgetState& budget) override;
+    [[nodiscard]] std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) override;
 
 private:
 

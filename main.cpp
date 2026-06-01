@@ -21,10 +21,10 @@ static int runGenerator(Gen & gen, const GenConfig & cfg, int count,
         while (!formulaAccepted && attempts < MAX_ATTEMPTS) {
             ++attempts;
             try {
-                // Genera la formula in modo puramente sintattico
+                
                 formula = gen.generateFormatted(cfg);
 
-                // Se non serve verificare o l'output non è TPTP, la accettiamo subito
+               
                 if (!verify || !runner || cfg.output != OutputFormat::TPTP) {
                     formulaAccepted = true;
                     break;

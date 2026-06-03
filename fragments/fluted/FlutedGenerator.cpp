@@ -140,7 +140,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
         auto varSym = Symbol::var(varName(nextStDepth));
         auto quantSym = exists ? Symbol::exists() : Symbol::forall();
         int nextDepth = currDepth > 0 ? currDepth - 1 : 0;
-        auto body = buildFL(nextDepth, nextSD, budget);
+        auto body = buildFL(nextDepth, nextStDepth, budget);
         return std::make_unique<QuantifierNode>(quantSym, varSym, std::move(body));
         };
 
@@ -180,14 +180,12 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
     case SymbolType::EXISTS: {
         int nextSD = stackDepth + 1;
         return std::make_unique<QuantifierNode>(Symbol::exists(), Symbol::var(varName(nextSD)),
-            buildFL(depth - 1, nextSD, budget));
-    }
+            buildFL(depth - 1, nextSD, budget)); }
 
     case SymbolType::FORALL: {
         int nextSD = stackDepth + 1;
         return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var(varName(nextSD)),
-            buildFL(depth - 1, nextSD, budget));
-    }
+            buildFL(depth - 1, nextSD, budget)); }
 
     case SymbolType::EQUALITY:
         if (stackDepth >= 2)

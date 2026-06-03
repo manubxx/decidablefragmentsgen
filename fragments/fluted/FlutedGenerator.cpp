@@ -9,11 +9,11 @@
 FlutedGenerator::FlutedGenerator(std::vector<PredInfo> vocab, unsigned seed) : FormulaBuilder(seed) , vocab_(std::move(vocab))
 {
     if (vocab_.empty())
-        throw std::invalid_argument("FlutedGenerator: empty vocabulary");
+        throw std::invalid_argument("FL: empty vocabulary");
 
     for (const auto& p : vocab_)
         if (p.arity < 1)
-            throw std::invalid_argument("FlutedGenerator: predicate '" + p.name + "' has arity < 1 (not allowed in FL)");
+            throw std::invalid_argument("FL: predicate '" + p.name + "' has arity < 1 (not allowed in FL)");
 }
 
 
@@ -36,7 +36,7 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
             activeVocab_.push_back(p);
 
     if (activeVocab_.empty())
-        throw std::invalid_argument("FlutedGenerator: no predicate with this arity in the vocabulary");
+        throw std::invalid_argument("FL: no predicate with this arity in the vocabulary");
 
     // lambda function for output
     auto finalize = [&](std::unique_ptr<ASTNode> f, const std::string& tptpRole) -> std::string {
@@ -69,7 +69,7 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
 
         if (cfg.budget.hasAnyConstraint() && !budgetOk)
             throw std::invalid_argument(
-                "FL: Unable to meet required budget with depth=" + std::to_string(cfg.depth) ");
+                "FL: unable to meet required budget with depth=" + std::to_string(cfg.depth) ");
 
         if (!formula) return "";
 
@@ -100,20 +100,20 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
         }
 
         if (cfg.budget.hasAnyConstraint() && !budgetOk)
-            throw std::invalid_argument("FL UNSAT: Unable to meet requested budget.");
+            throw std::invalid_argument("FL UNSAT: unable to meet requested budget.");
         if (!formula) return "";
 
         return finalize(std::move(formula), "negated_conjecture");
     }
 
-    throw std::invalid_argument("FlutedGenerator: Unrecognized mode.");
+    throw std::invalid_argument("FL: unrecognized mode.");
 }
 
 
 //  generateSAT 
 std::unique_ptr<ASTNode> FlutedGenerator::generateSAT(int /*depth*/, int /*domainSize*/, BudgetState& /*budget*/)
 {
-    throw std::logic_error("FlutedGenerator::generateSAT: not implemented. Use generateFormatted with GenMode::SAT.");
+    throw std::logic_error("FL::generateSAT: not implemented. Use generateFormatted with GenMode::SAT.");
 }
 
 
@@ -121,7 +121,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::generateSAT(int /*depth*/, int /*domai
 std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomic(const std::string& currentVar)
 {
     if (currentVar.empty() || currentVar[0] != 'x')
-        throw std::invalid_argument("FlutedGenerator::buildAtomic: variable not FL-valid: '" +  currentVar + ");
+        throw std::invalid_argument("FL::buildAtomic: variable not FL-valid: '" +  currentVar + ");
 
     int stackDepth = std::stoi(currentVar.substr(1));
     return buildAtomicLeaf(stackDepth);
@@ -207,7 +207,7 @@ std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomicLeaf(int stackDepth)
     auto admissible = admissiblePreds(stackDepth);
     if (admissible.empty())
         throw std::logic_error(
-            "FlutedGenerator::buildAtomicLeaf: nessun predicato ammissibile a stackDepth=" + std::to_string(stackDepth));
+            "FL::buildAtomicLeaf: no predicate allowed at stackDepth=" + std::to_string(stackDepth));
 
     int idx = admissible[randInt(0, static_cast<int>(admissible.size()) - 1)];
     const auto& p = activeVocab_[idx];
@@ -218,7 +218,7 @@ std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomicLeaf(int stackDepth)
 std::unique_ptr<EqualityNode> FlutedGenerator::buildEqualityLeaf(int stackDepth)
 {
     if (stackDepth < 2)
-        throw std::logic_error("FlutedGenerator::buildEqualityLeaf: stackDepth=" + std::to_string(stackDepth) + " < 2");
+        throw std::logic_error("FL:buildEqualityLeaf: stackDepth=" + std::to_string(stackDepth) + " < 2");
 
     return std::make_unique<EqualityNode>(Symbol::var(varName(stackDepth - 1)) , Symbol::var(varName(stackDepth)));
 }

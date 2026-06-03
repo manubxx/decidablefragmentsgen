@@ -6,10 +6,10 @@
 FO2Generator::FO2Generator(std::vector<PredInfo> vocab, unsigned seed) : FormulaBuilder(seed), vocab_(std::move(vocab))
 {
     if (vocab_.empty())
-        throw std::invalid_argument("FO2Generator: vocabolario vuoto");
+        throw std::invalid_argument("FO2: empty vocabulary");
     for (const auto& p : vocab_)
         if (p.arity < 1 || p.arity > 2)
-            throw std::invalid_argument("FO2Generator: predicato '" + p.name + "' ha arita' " + std::to_string(p.arity) + " (FO2 ammette solo arita' 1 o 2)");
+            throw std::invalid_argument("FO2: predicate '" + p.name + "' has arity <1 or >2 (not allowed in FO2)");
 }
 
 
@@ -22,7 +22,7 @@ std::string FO2Generator::generateFormatted(const GenConfig& cfg)
             activeVocab_.push_back(p);
 
     if (activeVocab_.empty())
-        throw std::invalid_argument("FO2Generator: nessun predicato con arita' " + std::to_string(cfg.arityFilter) + " nel vocabolario");
+        throw std::invalid_argument("FO2: no predicates with arity " + std::to_string(cfg.arityFilter));
 
     return FormulaBuilder::generateFormatted(cfg);
 }

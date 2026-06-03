@@ -2,10 +2,8 @@
 #include "../../FragmentTypes.hpp"
 #include <vector>
 
-// Vocabolario di default per FO2
-// Questo vocabolario è usato quando l'utente non specifica --preds.
-
-
+// FO2 Default Vocabulary  
+// Used when --preds is not specified.
 inline const std::vector<PredInfo> kVocabFO2 = {
     { "P", 2 },
     { "Q", 1 },

@@ -28,12 +28,10 @@ public:
         : pred_(std::move(predSymbol)), args_(std::move(args))
     {
         if (pred_.type != SymbolType::PREDICATE)
-            throw std::invalid_argument("AtomicNode: il simbolo non e' un PREDICATE");
+            throw std::invalid_argument("AtomicNode: symbol is not PREDICATE");
+
         if (static_cast<int>(args_.size()) != pred_.arity)
-            throw std::invalid_argument(
-                "AtomicNode: numero di argomenti (" +
-                std::to_string(args_.size()) + ") != arita' (" +
-                std::to_string(pred_.arity) + ")");
+            throw std::invalid_argument("AtomicNode: args number != preds arity: ("+std::to_string(pred_.arity) + ")");
     }
 
     [[nodiscard]] const Symbol& predSymbol() const { return pred_; }
@@ -81,13 +79,12 @@ private:
 // EqualityNode 
 class EqualityNode final : public ASTNode {
 public:
-    EqualityNode(Symbol lhs, Symbol rhs)
-        : lhs_(std::move(lhs)), rhs_(std::move(rhs))
+    EqualityNode(Symbol lhs, Symbol rhs) : lhs_(std::move(lhs)), rhs_(std::move(rhs))
     {
         if (lhs_.type != SymbolType::VARIABLE)
-            throw std::invalid_argument("EqualityNode: lhs non e' una VARIABLE: " + lhs_.name);
+            throw std::invalid_argument("EqualityNode: lhs is not a VARIABLE: " + lhs_.name);
         if (rhs_.type != SymbolType::VARIABLE)
-            throw std::invalid_argument("EqualityNode: rhs non e' una VARIABLE: " + rhs_.name);
+            throw std::invalid_argument("EqualityNode: rhs is not a VARIABLE: " + rhs_.name);
     }
 
     [[nodiscard]] const Symbol& lhs() const { return lhs_; }
@@ -122,8 +119,9 @@ private:
 //  NegNode 
 class NegNode final : public ASTNode {
 public:
+
     explicit NegNode(std::unique_ptr<ASTNode> child) : child_(std::move(child)) {
-        if (!child_) throw std::invalid_argument("NegNode: figlio nullo");
+        if (!child_) throw std::invalid_argument("NegNode: null child");
     }
 
     [[nodiscard]] const ASTNode& child() const { return *child_; }
@@ -148,25 +146,19 @@ private:
     std::unique_ptr<ASTNode> child_;
 };
 
+
 // BinaryConnNode 
 class BinaryConnNode final : public ASTNode {
 public:
-    BinaryConnNode(Symbol connSymbol,
-        std::unique_ptr<ASTNode> left,
-        std::unique_ptr<ASTNode> right)
-        : conn_(std::move(connSymbol)),
-        left_(std::move(left)),
-        right_(std::move(right))
+    BinaryConnNode(Symbol connSymbol, std::unique_ptr<ASTNode> left, std::unique_ptr<ASTNode> right) : conn_(std::move(connSymbol)), left_(std::move(left)), right_(std::move(right))
     {
-        if (conn_.type != SymbolType::AND &&
-            conn_.type != SymbolType::OR &&
-            conn_.type != SymbolType::IMPLIES)
-            throw std::invalid_argument("BinaryConnNode: simbolo non binario: " + conn_.name);
+        if (conn_.type != SymbolType::AND && conn_.type != SymbolType::OR && conn_.type != SymbolType::IMPLIES)
+            throw std::invalid_argument("BinaryConnNode: not binary symbol " + conn_.name);
         if (!left_ || !right_)
-            throw std::invalid_argument("BinaryConnNode: figlio nullo");
+            throw std::invalid_argument("BinaryConnNode: null child");
     }
 
-    [[nodiscard]] const Symbol& connSymbol() const { return conn_; }
+    [[nodiscard]] const Symbol& connSymbol()  const { return conn_; }
     [[nodiscard]] const ASTNode& left()       const { return *left_; }
     [[nodiscard]] const ASTNode& right()      const { return *right_; }
 
@@ -200,15 +192,15 @@ private:
 //  QuantifierNode 
 class QuantifierNode final : public ASTNode {
 public:
-    QuantifierNode(Symbol quant, Symbol var, std::unique_ptr<ASTNode> body)
-        : quant_(std::move(quant)), var_(std::move(var)), body_(std::move(body))
+
+    QuantifierNode(Symbol quant, Symbol var, std::unique_ptr<ASTNode> body) : quant_(std::move(quant)), var_(std::move(var)), body_(std::move(body))
     {
         if (quant_.type != SymbolType::FORALL && quant_.type != SymbolType::EXISTS)
-            throw std::invalid_argument("QuantifierNode: simbolo non quantificatore: " + quant_.name);
+            throw std::invalid_argument("QuantifierNode: symbol is not a quantifier: " + quant_.name);
         if (var_.type != SymbolType::VARIABLE)
-            throw std::invalid_argument("QuantifierNode: la variabile non e' VARIABLE: " + var_.name);
+            throw std::invalid_argument("QuantifierNode: var is not a variable " + var_.name);
         if (!body_)
-            throw std::invalid_argument("QuantifierNode: body nullo");
+            throw std::invalid_argument("QuantifierNode: null body");
     }
 
     [[nodiscard]] const Symbol& quantSymbol() const { return quant_; }
@@ -230,9 +222,7 @@ public:
     }
 
     [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override {
-        Symbol newQ = negated
-            ? (quant_.type == SymbolType::FORALL ? Symbol::exists() : Symbol::forall())
-            : quant_;
+        Symbol newQ = negated ? (quant_.type == SymbolType::FORALL ? Symbol::exists() : Symbol::forall()) : quant_;
         return std::make_unique<QuantifierNode>(newQ, var_, body_->toNNF(negated));
     }
 

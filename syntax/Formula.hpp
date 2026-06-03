@@ -4,14 +4,15 @@
 #include <string>
 
 
-//  Formula- sequenza ordinata di Symbol
+//  Formula - Symbol ordered sequence.
 class Formula {
 public:
+
     using Tokens = std::vector<Symbol>;
 
     explicit Formula(Tokens t) : tokens_(std::move(t)) {}
 
-    // accesso read-only
+    // read-only access
     [[nodiscard]] const Tokens& tokens() const { return tokens_; }
     [[nodiscard]] std::size_t   size()   const { return tokens_.size(); }
 
@@ -21,10 +22,10 @@ public:
         return sum;
     }
 
-    //  Validazione:condizioni necessarie e sufficienti per essere una wff:
-    //   1) La sequenza non è vuota
-    //   2) Ogni prefisso PROPRIO ha somma K <= 0
-    //   3) La somma TOTALE è esattamente 1
+    //  Validation: necessary and sufficient conditions to be a wff (well formed formula)
+    //   1) Sequence is not empty
+    //   2) Every proper prefix has sum K <= 0
+    //   3) Total sum is exactly 1
     [[nodiscard]] bool isValid() const {
         if (tokens_.empty()) return false;
 
@@ -37,7 +38,7 @@ public:
         return sum == 1;
     }
 
-    // Stampa
+    // Print
     [[nodiscard]] std::string toString() const {
         std::string out;
         for (std::size_t i = 0; i < tokens_.size(); ++i) {
@@ -47,7 +48,7 @@ public:
         return out;
     }
 
-    // Debug: K simbolo per simbolo
+    // Debug: K every symbol
     [[nodiscard]] std::string debugKTrace() const {
         std::string out;
         int running = 0;

@@ -17,7 +17,7 @@ add_executable(DecidableFragmentsGen
     "CLI/CLIPrinter.cpp"
     "CLI/CLIArgs.cpp"  
 
-)
+ "fragments/guarded/GuardedGenerator.cpp")
 
 if(MSVC)    
     target_compile_options(DecidableFragmentsGen PRIVATE /EHsc)

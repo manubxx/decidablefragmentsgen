@@ -6,8 +6,7 @@
 #include <iostream>
 
 template <typename Gen>
-static int runGenerator(Gen & gen, const GenConfig & cfg, int count,
-    bool verify, const VampireRunner * runner, int timeout)
+static int runGenerator(Gen & gen, const GenConfig & cfg, int count,  bool verify, const VampireRunner * runner, int timeout)
 {
     int failures = 0;
     int generatedCount = 0;
@@ -21,10 +20,9 @@ static int runGenerator(Gen & gen, const GenConfig & cfg, int count,
         while (!formulaAccepted && attempts < MAX_ATTEMPTS) {
             ++attempts;
             try {
-                
+               
                 formula = gen.generateFormatted(cfg);
 
-               
                 if (!verify || !runner || cfg.output != OutputFormat::TPTP) {
                     formulaAccepted = true;
                     break;
@@ -88,34 +86,31 @@ int main(int argc, char* argv[])
     }
 
     VampireRunner vampireRunner(args.vampirePath);
+
     if (args.verify && !vampireRunner.isAvailable()) {
-        std::cerr << "ATTENZIONE Vampire non trovato al percorso '"
-                  << args.vampirePath << "'.\n"
-                  << "  La generazione procedera' ma la verifica restituira' 'Error'.\n\n";
+        std::cerr << "ATTENZIONE Vampire non trovato al percorso '"  << args.vampirePath << "'.\n"
+                  << "La verifica restituira' 'Error'.\n\n";
     }
 
     const VampireRunner* runnerPtr = args.verify ? &vampireRunner : nullptr;
     int failures = 0;
 
     if (args.fragment == "fo2") {
-        printHeader("FO2", args.cfg, args.count, args.seed,
-                    args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
+        printHeader("FO2", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
+
         FO2Generator gen(args.cfg.vocab, args.seed);
-        failures = runGenerator(gen, args.cfg, args.count,
-                                args.verify, runnerPtr, args.vampireTimeout);
+        failures = runGenerator(gen, args.cfg, args.count,args.verify, runnerPtr, args.vampireTimeout);
     }
     else if (args.fragment == "fluted") {
-        printHeader("Fluted", args.cfg, args.count, args.seed,
-                    args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
+        printHeader("Fluted", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
+        
         FlutedGenerator gen(args.cfg.vocab, args.seed);
-        failures = runGenerator(gen, args.cfg, args.count,
-                                args.verify, runnerPtr, args.vampireTimeout);
+        failures = runGenerator(gen, args.cfg, args.count,args.verify, runnerPtr, args.vampireTimeout);
     }
 
     if (failures > 0)
-        std::cerr << "\n ATTENZIONE" << failures << "/" << args.count
-                  << " formule non generate.\n"
-                  << "Suggerimento: aumenta --depth o riduci i vincoli.\n\n";
+        std::cerr << "\n ATTENZIONE" << failures << "/" << args.count  << " formule non generate.\n"
+                  << "Suggestion: increase --depth or reduce constraints.\n\n";
 
     return 0;
 }

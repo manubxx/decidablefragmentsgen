@@ -46,7 +46,18 @@ namespace {
         throw std::invalid_argument("Unknown output format: '" + s + "' (allowed: default, tptp)");
     }
 
+
     // command --arity
+    int parseArityFilter(const std::string& val)
+    {
+        if (val == "mixed") return 0; // mixed mode
+
+        int filter = std::stoi(val);
+        if (filter < 1) { throw std::invalid_argument("--arity must be >= 1"); }
+        return filter;
+    }
+
+    // Vocab based on --arity filter
     std::vector<PredInfo> filterVocab(const std::vector<PredInfo>& base, int arityFilter)
     {
         if (arityFilter == 0) return base; // mixed mode
@@ -130,16 +141,8 @@ namespace {
         return rangeValue;
     }
 
-    // parses the value of --arity
-    int parseArityFilter(const std::string& val)
-    {
-        if (val == "mixed") return 0; // mixed mode
-
-        int filter = std::stoi(val);
-        if (filter < 1) { throw std::invalid_argument("--arity must be >= 1");}
-        return filter;
-    }
-
+    
+    
 
    
 }

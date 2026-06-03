@@ -65,7 +65,8 @@ struct NodeBudget {
         int t = 0;
         auto add = [&](const BudgetRange& r) { if (r.min >= 0) t += r.min; };
         add(and_count); add(or_count); add(not_count);
-        add(exists_count); add(forall_count); add(implies_count);
+        add(exists_count); add(forall_count); add(implies_count); add(eq_count);
+
         return t;
     }
 };
@@ -80,7 +81,5 @@ struct GenConfig {
     OutputFormat  output = OutputFormat::DEFAULT;
     NodeBudget    budget;
     int           arityFilter = 0;
-
-  
     std::vector<PredInfo> vocab;
 };

@@ -2,17 +2,14 @@
 #include <stdexcept>
 #include <algorithm>
 
-
-FO2Generator::FO2Generator(std::vector<PredInfo> vocab, unsigned seed)
-    : FormulaBuilder(seed), vocab_(std::move(vocab))
+//Constructor
+FO2Generator::FO2Generator(std::vector<PredInfo> vocab, unsigned seed) : FormulaBuilder(seed), vocab_(std::move(vocab))
 {
     if (vocab_.empty())
         throw std::invalid_argument("FO2Generator: vocabolario vuoto");
     for (const auto& p : vocab_)
         if (p.arity < 1 || p.arity > 2)
-            throw std::invalid_argument(
-                "FO2Generator: predicato '" + p.name + "' ha arita' " +
-                std::to_string(p.arity) + " (FO2 ammette solo arita' 1 o 2)");
+            throw std::invalid_argument("FO2Generator: predicato '" + p.name + "' ha arita' " + std::to_string(p.arity) + " (FO2 ammette solo arita' 1 o 2)");
 }
 
 
@@ -25,20 +22,15 @@ std::string FO2Generator::generateFormatted(const GenConfig& cfg)
             activeVocab_.push_back(p);
 
     if (activeVocab_.empty())
-        throw std::invalid_argument(
-            "FO2Generator: nessun predicato con arita' " +
-            std::to_string(cfg.arityFilter) + " nel vocabolario");
+        throw std::invalid_argument("FO2Generator: nessun predicato con arita' " + std::to_string(cfg.arityFilter) + " nel vocabolario");
 
     return FormulaBuilder::generateFormatted(cfg);
 }
 
 
 // generateSAT 
-// Genera una formula random con quantificatore radice (EXISTS o FORALL),
-// senza target propagation. La correttezza SAT e' verificata esternamente
-// da Vampire tramite --verify.
-std::unique_ptr<ASTNode> FO2Generator::generateSAT(int depth, int /*domainSize*/,
-    BudgetState& budget)
+// SAT is verified externally by Vampire using --verify.
+std::unique_ptr<ASTNode> FO2Generator::generateSAT(int depth, int /*domainSize*/, BudgetState& budget)
 {
     bool rootExists = (randInt(0, 1) == 0);
     int  bodyDepth = (depth > 0) ? depth - 1 : 0;
@@ -50,7 +42,6 @@ std::unique_ptr<ASTNode> FO2Generator::generateSAT(int depth, int /*domainSize*/
 
 
 // buildAtomic 
-// Le variabili in scope sono currentVar e nextVar(currentVar).
 std::unique_ptr<AtomicNode> FO2Generator::buildAtomic(const std::string& currentVar)
 {
     const std::string other = nextVar(currentVar);
@@ -74,9 +65,7 @@ std::unique_ptr<AtomicNode> FO2Generator::buildAtomic(const std::string& current
 }
 
 
-//  buildEqualityAtom
-// Sceglie casualmente tra le quattro combinazioni possibili:
-//   v1=v1, v1=v2, v2=v1, v2=v2.
+// buildEqualityAtom
 std::unique_ptr<EqualityNode> FO2Generator::buildEqualityAtom(const std::string& currentVar)
 {
     const std::string other = nextVar(currentVar);
@@ -87,8 +76,6 @@ std::unique_ptr<EqualityNode> FO2Generator::buildEqualityAtom(const std::string&
 
 
 //  build (override) 
-// Intercetta EQUALITY per usare buildEqualityAtom (scelta casuale su tutte
-// le combinazioni lhs/rhs), poi delega al base per il resto.
 std::unique_ptr<ASTNode> FO2Generator::build(int depth, const std::string& currentVar,
     BudgetState& budget)
 {

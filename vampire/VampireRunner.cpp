@@ -18,6 +18,7 @@
 #  define PCLOSE pclose
 #endif
 
+
 // Constructor
 
 VampireRunner::VampireRunner(std::string vampirePath)
@@ -27,8 +28,6 @@ VampireRunner::VampireRunner(std::string vampirePath)
         return;
     }
 
-    // Nessun percorso fornito: usa VAMPIRE_DEFAULT_PATH
-    // altrimenti fallback a "vampire"
 #ifdef VAMPIRE_DEFAULT_PATH
     vampirePath_ = VAMPIRE_DEFAULT_PATH;
 #else
@@ -36,12 +35,27 @@ VampireRunner::VampireRunner(std::string vampirePath)
 #endif
 }
 
-//isAvailable 
+
+// isAvailable
 
 bool VampireRunner::isAvailable() const
 {
+#ifdef _WIN32
+    // Su Windows Vampire gira via WSL: filesystem::exists non funziona
+    // per binari nel PATH di WSL. Si lancia wsl <vampire> --version
+    // e si verifica che produca output.
+    std::string checkCmd = "wsl " + vampirePath_ + " --version 2>&1";
+    FILE* pipe = _popen(checkCmd.c_str(), "r");
+    if (!pipe) return false;
+    char buf[64];
+    bool hasOutput = std::fgets(buf, sizeof(buf), pipe) != nullptr;
+    _pclose(pipe);
+    return hasOutput;
+#else
     return std::filesystem::exists(vampirePath_);
+#endif
 }
+
 
 // run
 
@@ -50,19 +64,12 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
 {
     Result result;
 
-    // Scrive la formula su un file temporaneo
-    //  basato sul PID per evitare collisioni in run paralleli.
 #ifdef _WIN32
-    
-
     char tmpPath[MAX_PATH];
     GetTempPathA(MAX_PATH, tmpPath);
-    // Sostituire backslash con forward slash per la conversione WSL
     for (char* p = tmpPath; *p; ++p) if (*p == '\\') *p = '/';
     std::string inputFile = std::string(tmpPath) + "vamp_input_"
         + std::to_string(GetCurrentProcessId()) + ".p";
-
-    
 #else
     std::string inputFile = "/tmp/vamp_input_"
         + std::to_string(getpid()) + ".p";
@@ -74,19 +81,15 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
             result.runError = true;
             result.status = "Error";
             result.rawOutput = "Impossibile creare il file temporaneo: " + inputFile;
+            std::remove(inputFile.c_str());
             return result;
         }
         ofs << tptpFormula << "\n";
     }
 
-    // Comando Vampire
-    //
-    //  Opzioni usate:
-    //    --mode casc          : modalita' di prova standard (CASC)
-    //    --time_limit <n>     : timeout in secondi
-    //    --output_axiom_names on : mantiene i nomi degli assiomi nell'output
-   
-   // Converte vampirePath_ in path WSL
+    std::ostringstream cmdStream;
+
+#ifdef _WIN32
     std::string wslVampire = vampirePath_;
     if (wslVampire.size() >= 2 && wslVampire[1] == ':') {
         char d = std::tolower(wslVampire[0]);
@@ -94,7 +97,6 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
     }
     std::replace(wslVampire.begin(), wslVampire.end(), '\\', '/');
 
-    // Converte inputFile in path WSL
     std::string wslInput = inputFile;
     if (wslInput.size() >= 2 && wslInput[1] == ':') {
         char d = std::tolower(wslInput[0]);
@@ -102,17 +104,20 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
     }
     std::replace(wslInput.begin(), wslInput.end(), '\\', '/');
 
-    std::ostringstream cmdStream;
-    cmdStream << "wsl vampire"
+    cmdStream << "wsl " << wslVampire
         << " --mode casc"
         << " --time_limit " << timeLimitSec
         << " " << wslInput
         << " 2>&1";
+#else
+    cmdStream << vampirePath_
+        << " --mode casc"
+        << " --time_limit " << timeLimitSec
+        << " " << inputFile
+        << " 2>&1";
+#endif
 
     std::string cmd = cmdStream.str();
-    
-
-    // Esegue e restituisce l'output 
 
     FILE* pipe = POPEN(cmd.c_str(), "r");
     if (!pipe) {
@@ -133,15 +138,11 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
     std::remove(inputFile.c_str());
 
     result.rawOutput = outputStream.str();
-
-    // Estrae lo status SZS
     result.status = extractSZSStatus(result.rawOutput);
 
     if (result.status == "Timeout")
         result.timedOut = true;
 
-    // Se Vampire ha restituito un output vuoto 
-    // il runner non è riuscito ad avviare il prover.
     if (result.rawOutput.empty()) {
         result.runError = true;
         result.status = "Error";
@@ -152,16 +153,14 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
     return result;
 }
 
+
 // extractSZSStatus
-// Vampire stampa lo status nel formato:
-//   % SZS status <Status> for <problem>
 
 std::string VampireRunner::extractSZSStatus(const std::string& output)
 {
     const std::string marker = "SZS status ";
     auto pos = output.find(marker);
     if (pos == std::string::npos) {
-        // Cerca fallback per timeout esplicito nel testo
         if (output.find("Time limit") != std::string::npos ||
             output.find("time limit") != std::string::npos)
             return "Timeout";
@@ -169,7 +168,6 @@ std::string VampireRunner::extractSZSStatus(const std::string& output)
     }
 
     pos += marker.size();
-    // Legge fino al primo spazio o fine riga
     auto end = output.find_first_of(" \t\r\n", pos);
     if (end == std::string::npos)
         return output.substr(pos);

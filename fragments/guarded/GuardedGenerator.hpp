@@ -40,6 +40,7 @@ private:
 
     static std::unique_ptr<ASTNode> wrapQuantifiers(Symbol quantSym, const std::vector<std::string>& boundVars, std::unique_ptr<ASTNode> body);  // (EXISTS, {y1,y2}, body) => EXISTS x1 (EXISTS x2 (body))
 
+    SymbolType pickTypeGF(int depth, BudgetState& budget);
 
     //  Utility
     static std::string varName(int n);

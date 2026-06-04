@@ -47,7 +47,6 @@ namespace {
         throw std::invalid_argument("Unknown output format: '" + s + "' (allowed: default, tptp)");
     }
 
-
     // command --arity
     int parseArityFilter(const std::string& val)
     {
@@ -125,7 +124,6 @@ namespace {
         std::cerr << file.rdbuf();
     }
 
-
     // parses the exact value or min:max interval of connectives constraints (--and, --or,...)
     BudgetRange parseRange(const std::string& s)
     {
@@ -142,9 +140,7 @@ namespace {
         return rangeValue;
     }
 
-} //namespace closed
-
-
+} // namespace closed
 
 
 // Main parsing function
@@ -170,7 +166,7 @@ AppArgs parseArgs(int argc, char* argv[])
         std::string arg = argv[i];
 
         if (arg == "--help") {
-            printUsage(); 
+            printUsage();
             throw HelpRequest{};
         }
         if (arg == "--verify") {
@@ -186,8 +182,10 @@ AppArgs parseArgs(int argc, char* argv[])
         std::string val = argv[++i];
 
         if (arg == "--fragment") {
-            if (val != "fo2" && val != "fluted" && val != "guarded") {
-                throw std::invalid_argument("Unsupported fragment: '" + val + "' (allowed: fo2, fluted)");}}
+            if (val != "fo2" && val != "fluted" && val != "guarded")
+                throw std::invalid_argument("Unsupported fragment: '" + val + "' (allowed: fo2, fluted, guarded)");
+            args.fragment = val; 
+        }
 
         else if (arg == "--mode")            args.cfg.mode = parseMode(val);
         else if (arg == "--depth")           args.cfg.depth = std::stoi(val);
@@ -197,9 +195,9 @@ AppArgs parseArgs(int argc, char* argv[])
         else if (arg == "--output")          args.cfg.output = parseOutput(val);
         else if (arg == "--vampire-path")    args.vampirePath = val;
         else if (arg == "--vampire-timeout") args.vampireTimeout = std::stoi(val);
-        else if (arg == "--seed") {          args.seed = static_cast<unsigned>(std::stoul(val)); hasSeed = true;}
+        else if (arg == "--seed") { args.seed = static_cast<unsigned>(std::stoul(val)); hasSeed = true; }
         else if (arg == "--arity")           arityFilter = parseArityFilter(val);
-        else if (arg == "--preds") {         newVocab = parsePreds(val, args.fragment); hasExplicitVocab = true;}
+        else if (arg == "--preds") { newVocab = parsePreds(val, args.fragment); hasExplicitVocab = true; }
         else if (arg == "--and")             args.cfg.budget.and_count = parseRange(val);
         else if (arg == "--or")              args.cfg.budget.or_count = parseRange(val);
         else if (arg == "--not")             args.cfg.budget.not_count = parseRange(val);
@@ -214,9 +212,9 @@ AppArgs parseArgs(int argc, char* argv[])
     }
 
     if (!hasExplicitVocab) {
-        if      (args.fragment == "fo2")     {newVocab = kVocabFO2;}
-        else if (args.fragment == "fluted")  {newVocab = kVocabFL;}
-        else if (args.fragment == "guarded") {newVocab = kVocabGF;}
+        if (args.fragment == "fo2") { newVocab = kVocabFO2; }
+        else if (args.fragment == "fluted") { newVocab = kVocabFL; }
+        else if (args.fragment == "guarded") { newVocab = kVocabGF; }
     }
 
     // filter vocabulary
@@ -229,16 +227,16 @@ AppArgs parseArgs(int argc, char* argv[])
         args.seed = rd();
     }
 
-    // consistency check vampire output 
+    // consistency check vampire output
     if (args.verify && args.cfg.output != OutputFormat::TPTP) {
         std::cerr << "[INFO] --verify requires TPTP output format. Forcing output to 'tptp'.\n";
         args.cfg.output = OutputFormat::TPTP;
     }
 
     // Semantic validation
-    if (args.cfg.depth < 0)      throw std::invalid_argument("--depth must be >= 0");
-    if (args.count <= 0)        throw std::invalid_argument("--count must be >= 1");
-    if (args.cfg.domainSize < 0) throw std::invalid_argument("--domain-size must be >= 0");
+    if (args.cfg.depth < 0)       throw std::invalid_argument("--depth must be >= 0");
+    if (args.count <= 0)          throw std::invalid_argument("--count must be >= 1");
+    if (args.cfg.domainSize < 0)  throw std::invalid_argument("--domain-size must be >= 0");
     if (args.vampireTimeout <= 0) throw std::invalid_argument("--vampire-timeout must be > 0");
     if (args.cfg.vocab.empty())   throw std::invalid_argument("The resulting vocabulary is empty.");
     args.cfg.budget.validate();

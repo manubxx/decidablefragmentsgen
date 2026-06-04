@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-// Classe base astratta per l'Abstract Syntax Tree
+// Abstract Syntax Tree
 class ASTNode {
 public:
     virtual ~ASTNode() = default;
@@ -16,7 +16,7 @@ public:
     [[nodiscard]] virtual std::unique_ptr<ASTNode> toNNF(bool negated = false) const = 0;
 };
 
-// --- AtomicNode ---
+// AtomicNode 
 class AtomicNode final : public ASTNode {
 public:
     AtomicNode(Symbol predSymbol, std::vector<Symbol> args);
@@ -35,7 +35,7 @@ private:
     static std::string tptpVar(const std::string& v);
 };
 
-// --- EqualityNode ---
+// EqualityNode
 class EqualityNode final : public ASTNode {
 public:
     EqualityNode(Symbol lhs, Symbol rhs);
@@ -54,7 +54,8 @@ private:
     static std::string tptpVar(const std::string& v);
 };
 
-// --- NegNode ---
+
+//  NegNode
 class NegNode final : public ASTNode {
 public:
     explicit NegNode(std::unique_ptr<ASTNode> child);
@@ -70,7 +71,7 @@ private:
     std::unique_ptr<ASTNode> child_;
 };
 
-// --- BinaryConnNode ---
+//  BinaryConnNode 
 class BinaryConnNode final : public ASTNode {
 public:
     BinaryConnNode(Symbol connSymbol, std::unique_ptr<ASTNode> left, std::unique_ptr<ASTNode> right);
@@ -90,7 +91,7 @@ private:
     std::unique_ptr<ASTNode> right_;
 };
 
-// --- QuantifierNode ---
+// QuantifierNode 
 class QuantifierNode final : public ASTNode {
 public:
     QuantifierNode(Symbol quant, Symbol var, std::unique_ptr<ASTNode> body);

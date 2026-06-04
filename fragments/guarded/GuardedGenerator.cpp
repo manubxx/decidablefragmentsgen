@@ -106,7 +106,9 @@ std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
 
 
 
-//std::unique_ptr<ASTNode> GuardedGenerator::generateSAT(int depth, int domainSize, BudgetState& budget) {} 
+std::unique_ptr<ASTNode> GuardedGenerator::generateSAT(int depth, int /*domainSize*/, BudgetState& budget) {
+    return buildGF(depth, budget);
+} 
 
 
 

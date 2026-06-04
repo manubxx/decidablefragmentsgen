@@ -30,15 +30,11 @@ std::string FO2Generator::generateFormatted(const GenConfig& cfg)
 
 // generateSAT 
 // SAT is verified externally by Vampire using --verify.
-std::unique_ptr<ASTNode> FO2Generator::generateSAT(int depth, int /*domainSize*/, BudgetState& budget)
+std::unique_ptr<ASTNode> FO2Generator::generateSAT(int depth, int /*domainSize*/, BudgetState & budget)
 {
-    bool rootExists = (randInt(0, 1) == 0);
-    int  bodyDepth = (depth > 0) ? depth - 1 : 0;
-
-    auto body = build(bodyDepth, "v2", budget);
-    auto rootQ = rootExists ? Symbol::exists() : Symbol::forall();
-    return std::make_unique<QuantifierNode>(rootQ, Symbol::var("v1"), std::move(body));
+    return build(depth, startVar(), budget);  
 }
+
 
 
 // buildAtomic 

@@ -3,12 +3,8 @@
 #include <vector>
 
 // FO2 Default Vocabulary  
-// Used when --preds is not specified.
+// Coerente al 100% con predName(arity, index) con indici partenti da 0.
 inline const std::vector<PredInfo> kVocabFO2 = {
-    { "P", 2 },
-    { "Q", 1 },
-    { "R", 2 },
-    { "S", 1 },
-    { "T", 2 },
-    { "U", 1 },
+    { "A0", 1 }, { "A1", 1 }, { "A2", 1 },
+    { "B0", 2 }, { "B1", 2 }, { "B2", 2 }, { "B3", 2 }
 };

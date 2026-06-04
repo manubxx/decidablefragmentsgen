@@ -9,6 +9,7 @@
 #include <map>
 #include <fragments/fo2/FO2vocab.hpp>
 #include <fragments/fluted/FLvocab.hpp>
+#include <fragments/guarded/GFvocab.hpp>
 
 namespace {
 
@@ -141,11 +142,10 @@ namespace {
         return rangeValue;
     }
 
-    
-    
+} //namespace closed
 
-   
-}
+
+
 
 // Main parsing function
 AppArgs parseArgs(int argc, char* argv[])
@@ -186,7 +186,7 @@ AppArgs parseArgs(int argc, char* argv[])
         std::string val = argv[++i];
 
         if (arg == "--fragment") {
-            if (val != "fo2" && val != "fluted") {
+            if (val != "fo2" && val != "fluted" && val != "guarded") {
                 throw std::invalid_argument("Unsupported fragment: '" + val + "' (allowed: fo2, fluted)");}}
 
         else if (arg == "--mode")            args.cfg.mode = parseMode(val);
@@ -214,10 +214,9 @@ AppArgs parseArgs(int argc, char* argv[])
     }
 
     if (!hasExplicitVocab) {
-        if (args.fragment == "fo2") {newVocab = kVocabFO2;}
-        else {
-            newVocab = kVocabFL;
-        }
+        if      (args.fragment == "fo2")     {newVocab = kVocabFO2;}
+        else if (args.fragment == "fluted")  {newVocab = kVocabFL;}
+        else if (args.fragment == "guarded") {newVocab = kVocabGF;}
     }
 
     // filter vocabulary

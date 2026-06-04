@@ -17,7 +17,7 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
 
     for (int attempt = 0; attempt < MAX_RETRY; ++attempt) {
 
-        BudgetState bs(cfg.budget, rng_);
+        FormulaBuilder::BudgetState bs(cfg.budget, rng_);
         try {
             switch (cfg.mode) {
             case GenMode::FREE:

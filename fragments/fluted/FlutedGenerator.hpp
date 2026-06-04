@@ -11,6 +11,7 @@ public:
    
     FlutedGenerator(std::vector<PredInfo> vocab, unsigned seed);
     ~FlutedGenerator() override = default;
+
     // FormulaBuilder Interface
     std::string fragmentName() const override;
     std::string startVar()     const override;
@@ -18,6 +19,7 @@ public:
    
 
     std::string generateFormatted(const GenConfig& cfg) override;
+
     std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) override;
     
     std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;

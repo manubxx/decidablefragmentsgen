@@ -12,12 +12,14 @@ add_executable(DecidableFragmentsGen
     "fragments/fo2/FO2vocab.hpp"
     "fragments/fluted/FlutedGenerator.cpp"
     "fragments/fluted/FLvocab.hpp"
+    "fragments/guarded/GuardedGenerator.cpp"
+    "fragments/guarded/GFvocab.hpp"
     "formulae/FormulaBuilder.cpp"
     "vampire/VampireRunner.cpp"
     "CLI/CLIPrinter.cpp"
     "CLI/CLIArgs.cpp"  
 
- "fragments/guarded/GuardedGenerator.cpp")
+ )
 
 if(MSVC)    
     target_compile_options(DecidableFragmentsGen PRIVATE /EHsc)

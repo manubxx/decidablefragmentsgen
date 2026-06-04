@@ -24,7 +24,7 @@ public:
 
     [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;
 
-    //[[nodiscard]] std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) override; 
+    [[nodiscard]] std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) override; 
 
 private: 
    

@@ -109,11 +109,13 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
 }
 
 
-//  generateSAT 
-std::unique_ptr<ASTNode> FlutedGenerator::generateSAT(int /*depth*/, int /*domainSize*/, BudgetState& /*budget*/)
+
+// SAT is verified externally by Vampire using --verify.
+std::unique_ptr<ASTNode> FlutedGenerator::generateSAT(int depth, int /*domainSize*/, BudgetState& budget)
 {
-    throw std::logic_error("FL::generateSAT: not implemented. Use generateFormatted with GenMode::SAT.");
+    return buildFL(depth, 0, budget);                       
 }
+
 
 
 //  buildAtomic (override FormulaBuilder)

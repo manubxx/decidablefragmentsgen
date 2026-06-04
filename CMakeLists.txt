@@ -19,7 +19,7 @@ add_executable(DecidableFragmentsGen
     "CLI/CLIPrinter.cpp"
     "CLI/CLIArgs.cpp"  
 
- )
+  "syntax/ASTNode.cpp")
 
 if(MSVC)    
     target_compile_options(DecidableFragmentsGen PRIVATE /EHsc)

@@ -11,12 +11,13 @@ static int runGenerator(Gen & gen, const GenConfig & cfg, int count,  bool verif
 {
     int failures = 0;
     int generatedCount = 0;
-    const int MAX_ATTEMPTS = 50; // Soglia di retry per formula
+    const int MAX_ATTEMPTS = 50; // retry limit for formula
 
     while (generatedCount < count) {
         int attempts = 0;
         bool formulaAccepted = false;
         std::string formula;
+
 
         while (!formulaAccepted && attempts < MAX_ATTEMPTS) {
             ++attempts;
@@ -26,36 +27,28 @@ static int runGenerator(Gen & gen, const GenConfig & cfg, int count,  bool verif
 
                 if (!verify || !runner || cfg.output != OutputFormat::TPTP) {
                     formulaAccepted = true;
-                    break;
-                }
+                    break;}
 
-                // Controllo Semantico Centralizzato con Vampire
+                // Semantic check with Vampire
                 auto res = runner->run(formula, timeout);
                 if (res.runError) {
-                    std::cerr << "  [ERRORE VAMPIRE] " << res.rawOutput << "\n";
-                    continue;
-                }
+                    std::cerr << "  [VAMPIRE ERROR] " << res.rawOutput << "\n";
+                    continue;}
 
-                // Logica di validazione basata sulla modalità richiesta
+     
                 if (cfg.mode == GenMode::SAT) {
                     if (res.status == "Satisfiable" || res.status == "CounterSatisfiable") {
-                        formulaAccepted = true;
-                    }
-                    // Se UNSAT o Timeout, il ciclo continua e rigenera
-                }
+                        formulaAccepted = true;} }
+
                 else if (cfg.mode == GenMode::UNSAT) {
                     if (res.status == "Unsatisfiable") {
-                        formulaAccepted = true;
-                    }
-                }
+                        formulaAccepted = true;} }
+
                 else {
-                    // Modalità FREE: accettiamo qualsiasi risultato valido da Vampire
-                    formulaAccepted = true;
-                }
+                        formulaAccepted = true; } //FREE       
 
             }
             catch (const std::exception& e) {
-                // Fallimento del budget o errore interno di buildFL/buildFO2
                 continue;
             }
         }
@@ -65,8 +58,7 @@ static int runGenerator(Gen & gen, const GenConfig & cfg, int count,  bool verif
             printFormula(generatedCount, cfg, formula, verify, runner, timeout);
         }
         else {
-            std::cerr << "[-] Impossibile generare una formula valida per l'indice "
-                << (generatedCount + 1) << " dopo " << MAX_ATTEMPTS << " tentativi.\n";
+            std::cerr << "Unable to generate a valid formula after" << MAX_ATTEMPTS << "attempts\n";
             ++failures;
             ++generatedCount;
         }
@@ -82,19 +74,19 @@ int main(int argc, char* argv[])
     } catch (const HelpRequest&) {
         return 0;
     } catch (const std::exception& e) {
-        std::cerr << "Errore: " << e.what() << "\n";
+        std::cerr << "Error " << e.what() << "\n";
         return 1;
     }
 
     VampireRunner vampireRunner(args.vampirePath);
 
     if (args.verify && !vampireRunner.isAvailable()) {
-        std::cerr << "ATTENZIONE Vampire non trovato al percorso '"  << args.vampirePath << "'.\n"
-                  << "La verifica restituira' 'Error'.\n\n";
+        std::cerr << "WARNING Vampire not found at path:"  << args.vampirePath << "'.\n" << "Verification will return 'Error'.\n\n";
     }
 
     const VampireRunner* runnerPtr = args.verify ? &vampireRunner : nullptr;
     int failures = 0;
+
 
     if (args.fragment == "fo2") {
         printHeader("FO2", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
@@ -110,13 +102,14 @@ int main(int argc, char* argv[])
     }
     else if (args.fragment == "guarded") {
         printHeader("Guarded", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
+
         GuardedGenerator gen(args.cfg.vocab, args.seed);
         failures = runGenerator(gen, args.cfg, args.count, args.verify, runnerPtr, args.vampireTimeout);
 
     }
 
     if (failures > 0)
-        std::cerr << "\n ATTENZIONE" << failures << "/" << args.count  << " formule non generate.\n"
+        std::cerr << "\n WARNING" << failures << "/" << args.count  << " formulae not generated.\n"
                   << "Suggestion: increase --depth or reduce constraints.\n\n";
 
     return 0;

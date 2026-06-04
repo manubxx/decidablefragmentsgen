@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 #include <memory>
+
+
 class FlutedGenerator : public FormulaBuilder {
 public:
    
@@ -28,12 +30,12 @@ private:
     std::unique_ptr<ASTNode> buildFL(int depth, int stackDepth, BudgetState& budget);
 
     std::unique_ptr<AtomicNode> buildAtomicLeaf(int stackDepth);
-   
     std::unique_ptr<EqualityNode> buildEqualityLeaf(int stackDepth);
 
     // Utility
     static std::string varName(int n);
-    std::vector<Symbol> flutedArgs(int stackDepth, int arity) const;
+    std::vector<Symbol> predArgNames(int stackDepth, int arity) const;
+
     std::vector<int> admissiblePreds(int stackDepth) const;
     int minArity() const;
 };

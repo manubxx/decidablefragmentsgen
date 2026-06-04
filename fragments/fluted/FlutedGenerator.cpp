@@ -68,8 +68,7 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
         }
 
         if (cfg.budget.hasAnyConstraint() && !budgetOk)
-            throw std::invalid_argument(
-                "FL: unable to meet required budget with depth=" + std::to_string(cfg.depth) ");
+            throw std::invalid_argument("FL: unable to meet required budget with depth=" + std::to_string(cfg.depth));
 
         if (!formula) return "";
 
@@ -121,7 +120,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::generateSAT(int /*depth*/, int /*domai
 std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomic(const std::string& currentVar)
 {
     if (currentVar.empty() || currentVar[0] != 'x')
-        throw std::invalid_argument("FL::buildAtomic: variable not FL-valid: '" +  currentVar + ");
+        throw std::invalid_argument("FL::buildAtomic: variable not FL-valid: '" + currentVar );
 
     int stackDepth = std::stoi(currentVar.substr(1));
     return buildAtomicLeaf(stackDepth);
@@ -209,14 +208,14 @@ std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomicLeaf(int stackDepth)
 
     int idx = admissible[randInt(0, static_cast<int>(admissible.size()) - 1)];
     const auto& p = activeVocab_[idx];
-    auto args = flutedArgs(stackDepth, p.arity);
+    auto args = predArgNames(stackDepth, p.arity);
     return std::make_unique<AtomicNode>(Symbol::pred(p.name, p.arity), std::move(args));
 }
 
 std::unique_ptr<EqualityNode> FlutedGenerator::buildEqualityLeaf(int stackDepth)
 {
     if (stackDepth < 2)
-        throw std::logic_error("FL:buildEqualityLeaf: stackDepth=" + std::to_string(stackDepth) + " < 2");
+        throw std::logic_error("FL:buildEqualityAtom: stackDepth=" + std::to_string(stackDepth) + " < 2");
 
     return std::make_unique<EqualityNode>(Symbol::var(varName(stackDepth - 1)) , Symbol::var(varName(stackDepth)));
 }
@@ -224,12 +223,11 @@ std::unique_ptr<EqualityNode> FlutedGenerator::buildEqualityLeaf(int stackDepth)
 
 // Utility
 
-std::string FlutedGenerator::varName(int n)
-{
+std::string FlutedGenerator::varName(int n) {
     return "x" + std::to_string(n);
 }
 
-std::vector<Symbol> FlutedGenerator::flutedPredArgs(int stackDepth, int arity) const
+std::vector<Symbol> FlutedGenerator::predArgNames(int stackDepth, int arity) const
 {
     std::vector<Symbol> predArgs;
     predArgs.reserve(arity);

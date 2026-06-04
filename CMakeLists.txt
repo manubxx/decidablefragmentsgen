@@ -11,7 +11,7 @@ add_executable(DecidableFragmentsGen
     "fragments/fo2/FO2Generator.cpp"
     "fragments/fo2/FO2vocab.hpp"
     "fragments/fluted/FlutedGenerator.cpp"
-    "fragments/fluted/Flutedvocab.hpp"
+    "fragments/fluted/FLvocab.hpp"
     "formulae/FormulaBuilder.cpp"
     "vampire/VampireRunner.cpp"
     "CLI/CLIPrinter.cpp"

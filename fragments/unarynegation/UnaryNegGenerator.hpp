@@ -34,19 +34,19 @@ private:
 
     // Core recursive builder 
 
-    // freeVars : variables that are free in the current formula context
+    // currFreeVars : variables that are free in the current formula context
     // Negation is legal only when freeVars.size() <= 1.
-    [[nodiscard]] std::unique_ptr<ASTNode> buildUN(int depth, const std::vector<std::string>& freeVars, BudgetState& budget);
+    [[nodiscard]] std::unique_ptr<ASTNode> buildUN(int depth, const std::vector<std::string>& currFreeVars, BudgetState& budget);
 
     // Builds a single atomic leaf using variables drawn from `scope`.
     [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomicUN(const std::vector<std::string>& scope);
 
     // Builds a negated sub-formula.
     // Precondition: freeVars.size() <= 1  (enforced by the caller).
-    [[nodiscard]] std::unique_ptr<ASTNode> buildNegatedBody(int depth, const std::vector<std::string>& freeVars, BudgetState& budget);
+    [[nodiscard]] std::unique_ptr<ASTNode> buildNegatedBody(int depth, const std::vector<std::string>& currFreeVars, BudgetState& budget);
 
     // candidateTypes restricted to what is legal given freeVars.
-    [[nodiscard]] std::vector<SymbolType> candidateTypesUN(int depth, const std::vector<std::string>& freeVars, const BudgetState& bs) const;
+    [[nodiscard]] std::vector<SymbolType> candidateTypesUN(int depth, const std::vector<std::string>& currFreeVars, const BudgetState& bs) const;
 
   
     // Utility

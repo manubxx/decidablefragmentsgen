@@ -126,7 +126,7 @@ std::unique_ptr<AtomicNode> UnaryNegGenerator::buildAtomic(const std::string& cu
 
 //  buildUN  —  recursive builder
 //  freeVars : variables that are free in the current sub-formula.
-std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector<std::string>& freeVars, BudgetState& budget)
+std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector<std::string>& currFreeVars, BudgetState& budget)
 {
     // If no variables are in scope yet, we must introduce one
     // with a (structural, budget-free) quantifier before we can build any atom.
@@ -159,19 +159,19 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
 
     // Base case: depth == 0  
     if (depth == 0) {
-        auto adm = admissiblePreds(freeVars);
+        auto adm = admissiblePreds(currFreeVars);
         if (!adm.empty())
-            return buildAtomicUN(freeVars);
-        return forcedQuant(0, freeVars);
+            return buildAtomicUN(currFreeVars);
+        return forcedQuant(0, currFreeVars);
     }
 
-    auto candidates = candidateTypesUN(depth, freeVars, budget);
+    auto candidates = candidateTypesUN(depth, currFreeVars, budget);
 
     if (candidates.empty()) {
-        auto adm = admissiblePreds(freeVars);
+        auto adm = admissiblePreds(currFreeVars);
         if (!adm.empty())
-            return buildAtomicUN(freeVars);
-        return forcedQuant(depth, freeVars);
+            return buildAtomicUN(currFreeVars);
+        return forcedQuant(depth, currFreeVars);
     }
 
     SymbolType chosen = pickType(depth, budget, candidates);
@@ -186,68 +186,65 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
     switch (chosen) {
 
     case SymbolType::NEG:
-        return buildNegatedBody(depth - 1, freeVars, budget);
+        return buildNegatedBody(depth - 1, currFreeVars, budget);
 
     case SymbolType::AND:
         return std::make_unique<BinaryConnNode>(Symbol::and_(),
-            buildUN(depth - 1, freeVars, budget),
-            buildUN(depth - 1, freeVars, budget));
+            buildUN(depth - 1, currFreeVars, budget),
+            buildUN(depth - 1, currFreeVars, budget));
 
     case SymbolType::OR:
         return std::make_unique<BinaryConnNode>(Symbol::or_(),
-            buildUN(depth - 1, freeVars, budget),
-            buildUN(depth - 1, freeVars, budget));
+            buildUN(depth - 1, currFreeVars, budget),
+            buildUN(depth - 1, currFreeVars, budget));
 
     case SymbolType::IMPLIES:
         return std::make_unique<BinaryConnNode>(Symbol::implies(),
-            buildUN(depth - 1, freeVars, budget),
-            buildUN(depth - 1, freeVars, budget));
+            buildUN(depth - 1, currFreeVars, budget),
+            buildUN(depth - 1, currFreeVars, budget));
 
     case SymbolType::EXISTS:
     case SymbolType::FORALL: {
         int maxIdx = 0;
-        for (const auto& v : freeVars) {
+        for (const auto& v : currFreeVars) {
             int idx = std::stoi(v.substr(1));
             if (idx > maxIdx) maxIdx = idx;
         }
         std::string newVar = "x" + std::to_string(maxIdx + 1);
 
-        std::vector<std::string> newScope = freeVars;
+        std::vector<std::string> newScope = currFreeVars;
         newScope.push_back(newVar);
 
         auto quantSym = (chosen == SymbolType::EXISTS) ? Symbol::exists() : Symbol::forall();
-        return std::make_unique<QuantifierNode>(
-            quantSym, Symbol::var(newVar),
-            buildUN(depth - 1, newScope, budget));
+        return std::make_unique<QuantifierNode>(quantSym, Symbol::var(newVar),   buildUN(depth - 1, newScope, budget));
     }
 
     case SymbolType::EQUALITY: {
         if (freeVars.size() >= 2) {
-            int i = randInt(0, static_cast<int>(freeVars.size()) - 1);
+            int i = randInt(0, static_cast<int>(currFreeVars.size()) - 1);
             int j;
-            do { j = randInt(0, static_cast<int>(freeVars.size()) - 1); } while (j == i);
-            return std::make_unique<EqualityNode>(
-                Symbol::var(freeVars[i]), Symbol::var(freeVars[j]));
+            do { j = randInt(0, static_cast<int>(currFreeVars.size()) - 1); } while (j == i);
+            return std::make_unique<EqualityNode>(Symbol::var(currFreeVars[i]), Symbol::var(currFreeVars[j]));
         }
         [[fallthrough]];
     }
 
     default: {
-        auto adm = admissiblePreds(freeVars);
+        auto adm = admissiblePreds(currFreeVars);
         if (!adm.empty())
-            return buildAtomicUN(freeVars);
-        return forcedQuant(depth, freeVars);
+            return buildAtomicUN(currFreeVars);
+        return forcedQuant(depth, currFreeVars);
     }
     }
 }
 
 
 //  buildNegatedBody
-std::unique_ptr<ASTNode> UnaryNegGenerator::buildNegatedBody(int depth, const std::vector<std::string>& freeVars, BudgetState& budget)
+std::unique_ptr<ASTNode> UnaryNegGenerator::buildNegatedBody(int depth, const std::vector<std::string>& currFreeVars, BudgetState& budget)
 {
     std::vector<std::string> unaryScope;
-    if (!freeVars.empty())
-        unaryScope = { freeVars[0] };
+    if (!currFreeVars.empty())
+        unaryScope = { currFreeVars[0] };
 
     auto body = buildUN(depth, unaryScope, budget);
     return std::make_unique<NegNode>(std::move(body));
@@ -255,7 +252,7 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildNegatedBody(int depth, const st
 
 
 //  candidateTypesUN
-std::vector<SymbolType> UnaryNegGenerator::candidateTypesUN(int depth, const std::vector<std::string>& freeVars, const BudgetState& bs) const
+std::vector<SymbolType> UnaryNegGenerator::candidateTypesUN(int depth, const std::vector<std::string>& currFreeVars, const BudgetState& bs) const
 {
     if (depth == 0) return {};
 
@@ -269,9 +266,9 @@ std::vector<SymbolType> UnaryNegGenerator::candidateTypesUN(int depth, const std
     for (auto t : pool) {
         if (!bs.canUse(t)) continue;
 
-        if (t == SymbolType::NEG && freeVars.size() > 1)
+        if (t == SymbolType::NEG && currFreeVars.size() > 1)
             continue;   //illegal in UNFO
-        if (t == SymbolType::EQUALITY && freeVars.size() < 2)
+        if (t == SymbolType::EQUALITY && currFreeVars.size() < 2)
             continue;   // x=y atleast two vars in scope 
 
         candidates.push_back(t);

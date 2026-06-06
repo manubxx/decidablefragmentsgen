@@ -211,21 +211,18 @@ std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budge
 }
 
 
-// candidateTypesGF — applica i vincoli del Guarded Fragment sopra candidateTypes:
-//   - EQUALITY rimossa se scope < 2
-//   - EXISTS/FORALL rimossi se non esiste alcun predicato guard ammissibile
-// Restituisce la lista pronta per pickType — nessuna logica forced/consume qui.
+// candidateTypesGF — FormulaBuilder candidateTypes specification:
 std::vector<SymbolType> GuardedGenerator::candidateTypesGF(int depth, const BudgetState& bs) const
 {
     auto candidates = candidateTypes(depth, bs);   // filtro budget dal padre
 
-    // Rimuovi EQUALITY se non ci sono abbastanza variabili in scope
+    // remove EQUALITY if not enough vars in scope
     if (currScopeFreeVars.size() < 2)
         candidates.erase(
             std::remove(candidates.begin(), candidates.end(), SymbolType::EQUALITY),
             candidates.end());
 
-    // Rimuovi EXISTS/FORALL se non esiste un predicato guard per nessun k
+    // remove EXISTS/FORALL if no guard predicate for k exists
     int outerSize = static_cast<int>(currScopeFreeVars.size());
     bool canQuant = false;
     for (int k = 1; k <= 3; ++k)
@@ -287,10 +284,7 @@ std::unique_ptr<AtomicNode> GuardedGenerator::buildGuard(const std::vector<std::
         return std::make_unique<AtomicNode>(Symbol::pred(p.name, p.arity), std::move(args));
     }
 
-    throw std::logic_error(
-        "GuardedGenerator::buildGuard: no guard predicate found for outerScope="
-        + std::to_string(outerScopeVars.size())
-        + " + boundVars=" + std::to_string(boundVars.size()));
+    throw std::logic_error("GuardedGenerator::buildGuard: no guard predicate found for outerScope=" + std::to_string(outerScopeVars.size())  + " + boundVars=" + std::to_string(boundVars.size()));
 }
 
 

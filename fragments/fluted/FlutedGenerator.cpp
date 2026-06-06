@@ -15,7 +15,6 @@ FlutedGenerator::FlutedGenerator(std::vector<PredInfo> vocab, unsigned seed) : F
             throw std::invalid_argument("FL: predicate '" + p.name + "' has arity < 1 (not allowed in FL)");
 }
 
-
 std::string FlutedGenerator::fragmentName() const { return "FL"; }
 std::string FlutedGenerator::startVar()     const { return "x1"; }
 std::string FlutedGenerator::nextVar(const std::string& current) const
@@ -138,8 +137,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
         return forcedQuant(0, stackDepth);
     }
 
-    // Filtra i candidati secondo il vincolo FL (EQUALITY solo se stackDepth >= 2)
-    // e poi delega a pickType con la lista già pronta.
+
     auto candidates = candidateTypesFL(depth, stackDepth, budget);
 
     if (candidates.empty()) {
@@ -147,7 +145,6 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
         return forcedQuant(depth, stackDepth);
     }
 
-    // ↓ overload con candidati: nessun fallthrough difensivo necessario
     SymbolType chosen = pickType(depth, budget, candidates);
 
     switch (chosen) {
@@ -182,7 +179,6 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
     }
 
     case SymbolType::EQUALITY:
-        // Garantito ammissibile da candidateTypesFL (stackDepth >= 2)
         return buildEqualityLeaf(stackDepth);
 
     default:
@@ -191,9 +187,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
     }
 }
 
-
-// candidateTypesFL — aggiunge il vincolo FL a candidateTypes del padre:
-// EQUALITY è ammessa solo quando stackDepth >= 2.
+//candidateTypes: FormulaBuilder::candidateTypes specification for FL
 std::vector<SymbolType> FlutedGenerator::candidateTypesFL(int depth, int stackDepth, const BudgetState& bs) const
 {
     auto candidates = candidateTypes(depth, bs);   // filtro budget dal padre

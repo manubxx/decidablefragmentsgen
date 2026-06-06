@@ -1,4 +1,3 @@
-
 #include "FlutedGenerator.hpp"
 #include <stdexcept>
 #include <algorithm>
@@ -6,7 +5,7 @@
 
 
 // Constructor
-FlutedGenerator::FlutedGenerator(std::vector<PredInfo> vocab, unsigned seed) : FormulaBuilder(seed) , vocab_(std::move(vocab))
+FlutedGenerator::FlutedGenerator(std::vector<PredInfo> vocab, unsigned seed) : FormulaBuilder(seed), vocab_(std::move(vocab))
 {
     if (vocab_.empty())
         throw std::invalid_argument("FL: empty vocabulary");
@@ -29,7 +28,6 @@ std::string FlutedGenerator::nextVar(const std::string& current) const
 // generateFormatted entry point
 std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
 {
-    // arity filter on vocabulary
     activeVocab_.clear();
     for (const auto& p : vocab_)
         if (cfg.arityFilter == 0 || p.arity == cfg.arityFilter)
@@ -38,7 +36,6 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
     if (activeVocab_.empty())
         throw std::invalid_argument("FL: no predicate with this arity in the vocabulary");
 
-    // lambda function for output
     auto finalize = [&](std::unique_ptr<ASTNode> f, const std::string& tptpRole) -> std::string {
         if (cfg.transform == TransformMode::NNF)
             f = f->toNNF(false);
@@ -47,9 +44,7 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
         return f->toString();
         };
 
-    
-    // FREE and SAT 
-    // SAT is verified externally by Vampire using --verify.
+    // FREE and SAT
     if (cfg.mode == GenMode::FREE || cfg.mode == GenMode::SAT) {
         static constexpr int MAX_RETRY = 500;
         std::unique_ptr<ASTNode> formula;
@@ -59,12 +54,12 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
             BudgetState bs(cfg.budget, rng_);
 
             try { formula = buildFL(cfg.depth, 0, bs); }
-         
-            catch (const std::exception&) { continue;}
+            catch (const std::exception&) { continue; }
 
             if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
                 budgetOk = true;
-                break; }
+                break;
+            }
         }
 
         if (cfg.budget.hasAnyConstraint() && !budgetOk)
@@ -76,7 +71,7 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
         return finalize(std::move(formula), role);
     }
 
-    //  UNSAT  —  phi AND NOT phi
+    //  UNSAT  —  φ ∧ ¬φ  (clone garantisce stessa formula)
     if (cfg.mode == GenMode::UNSAT) {
         static constexpr int MAX_RETRY = 500;
         std::unique_ptr<ASTNode> formula;
@@ -86,9 +81,10 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
             BudgetState bs(cfg.budget, rng_);
             try {
                 auto phi = buildFL(cfg.depth, 0, bs);
-                auto notPhi = std::make_unique<NegNode>(buildFL(cfg.depth, 0, bs));
+                auto copy = phi->clone();                           // ← clone, non buildFL separato
                 formula = std::make_unique<BinaryConnNode>(
-                    Symbol::and_(), std::move(phi), std::move(notPhi));
+                    Symbol::and_(), std::move(phi),
+                    std::make_unique<NegNode>(std::move(copy)));   // φ ∧ ¬φ garantito UNSAT
             }
             catch (const std::exception&) { continue; }
 
@@ -109,33 +105,29 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
 }
 
 
-
-// SAT is verified externally by Vampire using --verify.
 std::unique_ptr<ASTNode> FlutedGenerator::generateSAT(int depth, int /*domainSize*/, BudgetState& budget)
 {
-    return buildFL(depth, 0, budget);                       
+    return buildFL(depth, 0, budget);
 }
-
 
 
 //  buildAtomic (override FormulaBuilder)
 std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomic(const std::string& currentVar)
 {
     if (currentVar.empty() || currentVar[0] != 'x')
-        throw std::invalid_argument("FL::buildAtomic: variable not FL-valid: '" + currentVar );
+        throw std::invalid_argument("FL::buildAtomic: variable not FL-valid: '" + currentVar);
 
     int stackDepth = std::stoi(currentVar.substr(1));
     return buildAtomicLeaf(stackDepth);
 }
 
 
-//  buildFL 
+//  buildFL
 std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, BudgetState& budget)
 {
     auto admissible = admissiblePreds(stackDepth);
 
-    // forced structural quantifier (not counted in budget) if no valid atom in this depth
-    auto forcedQuant = [&](int currDepth, int currStDepth) -> std::unique_ptr<ASTNode> {   
+    auto forcedQuant = [&](int currDepth, int currStDepth) -> std::unique_ptr<ASTNode> {
         bool exists = (randInt(0, 1) == 0);
         int  nextStDepth = currStDepth + 1;
         auto varSym = Symbol::var(varName(nextStDepth));
@@ -151,13 +143,17 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
         return forcedQuant(0, stackDepth);
     }
 
-    auto candidates = candidateTypes(depth, budget);
+    // Filtra i candidati secondo il vincolo FL (EQUALITY solo se stackDepth >= 2)
+    // e poi delega a pickType con la lista già pronta.
+    auto candidates = candidateTypesFL(depth, stackDepth, budget);
+
     if (candidates.empty()) {
         if (!admissible.empty()) return buildAtomicLeaf(stackDepth);
         return forcedQuant(depth, stackDepth);
     }
 
-    SymbolType chosen = pickType(depth, budget);
+    // ↓ overload con candidati: nessun fallthrough difensivo necessario
+    SymbolType chosen = pickType(depth, budget, candidates);
 
     switch (chosen) {
     case SymbolType::NEG:
@@ -181,22 +177,38 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
     case SymbolType::EXISTS: {
         int nextSD = stackDepth + 1;
         return std::make_unique<QuantifierNode>(Symbol::exists(), Symbol::var(varName(nextSD)),
-            buildFL(depth - 1, nextSD, budget)); }
+            buildFL(depth - 1, nextSD, budget));
+    }
 
     case SymbolType::FORALL: {
         int nextSD = stackDepth + 1;
         return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var(varName(nextSD)),
-            buildFL(depth - 1, nextSD, budget)); }
+            buildFL(depth - 1, nextSD, budget));
+    }
 
     case SymbolType::EQUALITY:
-        if (stackDepth >= 2)
-            return buildEqualityLeaf(stackDepth);
-        [[fallthrough]];
+        // Garantito ammissibile da candidateTypesFL (stackDepth >= 2)
+        return buildEqualityLeaf(stackDepth);
 
     default:
         if (!admissible.empty()) return buildAtomicLeaf(stackDepth);
         return forcedQuant(depth, stackDepth);
     }
+}
+
+
+// candidateTypesFL — aggiunge il vincolo FL a candidateTypes del padre:
+// EQUALITY è ammessa solo quando stackDepth >= 2.
+std::vector<SymbolType> FlutedGenerator::candidateTypesFL(int depth, int stackDepth, const BudgetState& bs) const
+{
+    auto candidates = candidateTypes(depth, bs);   // filtro budget dal padre
+
+    if (stackDepth < 2)
+        candidates.erase(
+            std::remove(candidates.begin(), candidates.end(), SymbolType::EQUALITY),
+            candidates.end());
+
+    return candidates;
 }
 
 
@@ -219,7 +231,7 @@ std::unique_ptr<EqualityNode> FlutedGenerator::buildEqualityLeaf(int stackDepth)
     if (stackDepth < 2)
         throw std::logic_error("FL:buildEqualityAtom: stackDepth=" + std::to_string(stackDepth) + " < 2");
 
-    return std::make_unique<EqualityNode>(Symbol::var(varName(stackDepth - 1)) , Symbol::var(varName(stackDepth)));
+    return std::make_unique<EqualityNode>(Symbol::var(varName(stackDepth - 1)), Symbol::var(varName(stackDepth)));
 }
 
 

@@ -29,14 +29,17 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
             case GenMode::UNSAT:
                 formula = generateUNSAT(cfg.depth, bs);
                 break;
-            }}
+            }
+        }
 
         catch (const std::exception&) {
-            continue;}
+            continue;
+        }
 
         if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
             budgetOk = true;
-            break;}
+            break;
+        }
     }
 
     if (cfg.budget.hasAnyConstraint() && !budgetOk)
@@ -83,13 +86,13 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     auto applyDelta = [](int& current, int budget_old, int budget_new) {
         if (budget_old > 0) current = std::max(0, current - (budget_old - budget_new));  };
 
-    applyDelta(budget.and_left,     lastbudget.and_left,     budget.and_left);
-    applyDelta(budget.or_left,      lastbudget.or_left,      budget.or_left);
-    applyDelta(budget.not_left,     lastbudget.not_left,     budget.not_left);
-    applyDelta(budget.exists_left,  lastbudget.exists_left,  budget.exists_left);
-    applyDelta(budget.forall_left,  lastbudget.forall_left,  budget.forall_left);
+    applyDelta(budget.and_left, lastbudget.and_left, budget.and_left);
+    applyDelta(budget.or_left, lastbudget.or_left, budget.or_left);
+    applyDelta(budget.not_left, lastbudget.not_left, budget.not_left);
+    applyDelta(budget.exists_left, lastbudget.exists_left, budget.exists_left);
+    applyDelta(budget.forall_left, lastbudget.forall_left, budget.forall_left);
     applyDelta(budget.implies_left, lastbudget.implies_left, budget.implies_left);
-    applyDelta(budget.eq_left,      lastbudget.eq_left,      budget.eq_left);
+    applyDelta(budget.eq_left, lastbudget.eq_left, budget.eq_left);
 
     return std::make_unique<BinaryConnNode>(
         Symbol::and_(), std::move(phi), std::make_unique<NegNode>(std::move(copy)));
@@ -112,9 +115,12 @@ std::vector<SymbolType> FormulaBuilder::candidateTypes(int depth, const BudgetSt
     return candidates;
 }
 
-// pickType
-SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget) {
-    auto candidates = candidateTypes(depth, budget);
+// pickType — overload principale: riceve i candidati già filtrati dal chiamante.
+// Ogni frammento costruisce la propria lista (es. candidateTypesUN, pickTypeGF)
+// e delega qui tutta la logica forced/random + budget.consume.
+SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget,
+    const std::vector<SymbolType>& candidates) {
+    if (candidates.empty()) return SymbolType::PREDICATE;
 
     std::vector<SymbolType> forced;
     for (auto t : candidates) {
@@ -134,11 +140,15 @@ SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget) {
 
     auto& pick = (budget.remaining() > depth && !forced.empty()) ? forced : candidates;
 
-    if (pick.empty()) return SymbolType::PREDICATE;
-
     SymbolType chosen = pick[randInt(0, static_cast<int>(pick.size()) - 1)];
     budget.consume(chosen);
     return chosen;
+}
+
+// pickType — wrapper retrocompatibile per build() e chi non ha filtri aggiuntivi.
+SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget) {
+    auto candidates = candidateTypes(depth, budget);
+    return pickType(depth, budget, candidates);
 }
 
 // build 
@@ -150,7 +160,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::build(int depth, const std::string& cur
     if (candidates.empty())
         return buildAtomic(currentVar);
 
-    SymbolType chosen = pickType(depth, budget);
+    SymbolType chosen = pickType(depth, budget, candidates);
 
     switch (chosen) {
     case SymbolType::NEG:

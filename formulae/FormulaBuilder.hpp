@@ -127,6 +127,7 @@ protected:
     [[nodiscard]] std::vector<SymbolType> candidateTypes(int depth, const BudgetState& budget) const;
 
     SymbolType pickType(int depth, BudgetState& budget);
+    SymbolType pickType(int depth, BudgetState& budget, const std::vector<SymbolType>& candidates); //overload 
 
     int randInt(int lo, int hi);
 

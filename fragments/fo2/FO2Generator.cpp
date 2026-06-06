@@ -82,7 +82,7 @@ std::unique_ptr<ASTNode> FO2Generator::build(int depth, const std::string& curre
     if (candidates.empty())
         return buildAtomic(currentVar);
 
-    SymbolType chosen = pickType(depth, budget);
+    SymbolType chosen = pickType(depth, budget, candidates);
 
     if (chosen == SymbolType::EQUALITY)
         return buildEqualityAtom(currentVar);

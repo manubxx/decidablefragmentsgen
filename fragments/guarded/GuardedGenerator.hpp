@@ -30,7 +30,7 @@ private:
    
     std::vector<PredInfo> vocab_;
     std::vector<PredInfo> activeVocab_;
-    std::vector<std::string> currScopeVars; // Free Vars during the local recursive scope 
+    std::vector<std::string> currScopeFreeVars; // Free Vars during the local recursive scope 
 
     std::unique_ptr<ASTNode> buildGF(int depth, BudgetState& budget);
 
@@ -40,7 +40,7 @@ private:
 
     static std::unique_ptr<ASTNode> wrapQuantifiers(Symbol quantSym, const std::vector<std::string>& boundVars, std::unique_ptr<ASTNode> body);  // (EXISTS, {y1,y2}, body) => EXISTS x1 (EXISTS x2 (body))
 
-    SymbolType pickTypeGF(int depth, BudgetState& budget);
+    std::vector<SymbolType> candidateTypesGF(int depth,const BudgetState& bs) const;
 
     //  Utility
     static std::string varName(int n);

@@ -18,7 +18,7 @@ add_executable(DecidableFragmentsGen
     "vampire/VampireRunner.cpp"
     "CLI/CLIPrinter.cpp"
     "CLI/CLIArgs.cpp"  
-    "syntax/ASTNode.cpp")
+    "syntax/ASTNode.cpp" )
 
 if(MSVC)    
     target_compile_options(DecidableFragmentsGen PRIVATE /EHsc)

@@ -23,7 +23,7 @@ std::string GuardedGenerator::nextVar(const std::string& current) const
     return varName(n + 1);
 }
 
-//  generateFormatted - generation entry point 
+//  generateFormatted
 std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
 {
     activeVocab_.clear();
@@ -55,7 +55,7 @@ std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
 
         for (int attempt = 0; attempt < MAX_RETRY; ++attempt) {
             BudgetState bs(cfg.budget, rng_);
-            currScopeVars = { "x1" };
+            currScopeFreeVars = { "x1" };
 
             try { formula = buildGF(cfg.depth, bs); }
             catch (const std::exception& e) {
@@ -77,6 +77,7 @@ std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
         return finalize(std::move(formula), "axiom");
     }
 
+    //  UNSAT  —  φ ∧ ¬φ  (clone garantisce stessa formula)
     if (cfg.mode == GenMode::UNSAT) {
         static constexpr int MAX_RETRY = 500;
         std::unique_ptr<ASTNode> formula;
@@ -85,11 +86,12 @@ std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
         for (int attempt = 0; attempt < MAX_RETRY; ++attempt) {
             BudgetState bs(cfg.budget, rng_);
             try {
-                currScopeVars = { "x1" };
+                currScopeFreeVars = { "x1" };
                 auto phi = buildGF(cfg.depth, bs);
-                currScopeVars = { "x1" };
-                auto notPhi = std::make_unique<NegNode>(buildGF(cfg.depth, bs));
-                formula = std::make_unique<BinaryConnNode>(Symbol::and_(), std::move(phi), std::move(notPhi));
+                auto copy = phi->clone();                           // ← clone, non buildGF separato
+                formula = std::make_unique<BinaryConnNode>(
+                    Symbol::and_(), std::move(phi),
+                    std::make_unique<NegNode>(std::move(copy)));   // φ ∧ ¬φ garantito UNSAT
             }
             catch (const std::exception& e) {
                 if (attempt < 3)
@@ -114,8 +116,6 @@ std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
 }
 
 
-
-
 std::unique_ptr<ASTNode> GuardedGenerator::generateSAT(int depth, int /*domainSize*/, BudgetState& budget) {
     return buildGF(depth, budget);
 }
@@ -124,7 +124,7 @@ std::unique_ptr<ASTNode> GuardedGenerator::generateSAT(int depth, int /*domainSi
 //  buildAtomic  (override FormulaBuilder)
 std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomic(const std::string& /*currentVar*/)
 {
-    return buildAtomicLeaf(currScopeVars);
+    return buildAtomicLeaf(currScopeFreeVars);
 }
 
 
@@ -132,13 +132,17 @@ std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomic(const std::string& /*c
 std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budget)
 {
     if (depth == 0)
-        return buildAtomicLeaf(currScopeVars);
+        return buildAtomicLeaf(currScopeFreeVars);
 
-    auto candidates = candidateTypes(depth, budget);
+    // candidateTypesGF applica i vincoli GF (EQUALITY, EXISTS/FORALL)
+    // e restituisce la lista già filtrata da passare a pickType.
+    auto candidates = candidateTypesGF(depth, budget);
+
     if (candidates.empty())
-        return buildAtomicLeaf(currScopeVars);
+        return buildAtomicLeaf(currScopeFreeVars);
 
-    SymbolType chosen = pickTypeGF(depth, budget);
+    // ↓ overload con candidati: tutta la logica forced/consume nel padre
+    SymbolType chosen = pickType(depth, budget, candidates);
 
     switch (chosen) {
 
@@ -161,26 +165,26 @@ std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budge
             buildGF(depth - 1, budget));
 
     case SymbolType::EQUALITY: {
-        if (currScopeVars.size() >= 2) {
-            int i = randInt(0, static_cast<int>(currScopeVars.size()) - 1);
-            int j = randInt(0, static_cast<int>(currScopeVars.size()) - 1);
-            return std::make_unique<EqualityNode>(Symbol::var(currScopeVars[i]), Symbol::var(currScopeVars[j]));
-        }
-        return buildAtomicLeaf(currScopeVars);
+        // Garantito ammissibile da candidateTypesGF (scope >= 2)
+        int i = randInt(0, static_cast<int>(currScopeFreeVars.size()) - 1);
+        int j;
+        do { j = randInt(0, static_cast<int>(currScopeFreeVars.size()) - 1); } while (j == i);
+        return std::make_unique<EqualityNode>(
+            Symbol::var(currScopeFreeVars[i]), Symbol::var(currScopeFreeVars[j]));
     }
 
     case SymbolType::EXISTS: {
         int maxK = std::min(3, depth);
         int k = randInt(1, maxK);
         auto boundVars = nextVarNames(k);
-        auto guard = buildGuard(currScopeVars, boundVars);
+        auto guard = buildGuard(currScopeFreeVars, boundVars);
 
-        auto snapScopeVars = currScopeVars;
+        auto snapScopeVars = currScopeFreeVars;
         for (const auto& y : boundVars)
-            currScopeVars.push_back(y);
+            currScopeFreeVars.push_back(y);
 
         auto body = buildGF(depth - 1, budget);
-        currScopeVars = snapScopeVars;
+        currScopeFreeVars = snapScopeVars;
 
         auto guardAndBody = std::make_unique<BinaryConnNode>(Symbol::and_(), std::move(guard), std::move(body));
         return wrapQuantifiers(Symbol::exists(), boundVars, std::move(guardAndBody));
@@ -190,23 +194,57 @@ std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budge
         int maxK = std::min(3, depth);
         int k = randInt(1, maxK);
         auto boundVars = nextVarNames(k);
-        auto guard = buildGuard(currScopeVars, boundVars);
+        auto guard = buildGuard(currScopeFreeVars, boundVars);
 
-        auto snapScopeVars = currScopeVars;
+        auto snapScopeVars = currScopeFreeVars;
         for (const auto& y : boundVars)
-            currScopeVars.push_back(y);
+            currScopeFreeVars.push_back(y);
 
         auto body = buildGF(depth - 1, budget);
-        currScopeVars = snapScopeVars;
+        currScopeFreeVars = snapScopeVars;
 
         auto guardImpliesBody = std::make_unique<BinaryConnNode>(Symbol::implies(), std::move(guard), std::move(body));
         return wrapQuantifiers(Symbol::forall(), boundVars, std::move(guardImpliesBody));
     }
+
     case SymbolType::PREDICATE:
     case SymbolType::VARIABLE:
     default:
-        return buildAtomicLeaf(currScopeVars);
+        return buildAtomicLeaf(currScopeFreeVars);
     }
+}
+
+
+// candidateTypesGF — applica i vincoli del Guarded Fragment sopra candidateTypes:
+//   - EQUALITY rimossa se scope < 2
+//   - EXISTS/FORALL rimossi se non esiste alcun predicato guard ammissibile
+// Restituisce la lista pronta per pickType — nessuna logica forced/consume qui.
+std::vector<SymbolType> GuardedGenerator::candidateTypesGF(int depth, const BudgetState& bs) const
+{
+    auto candidates = candidateTypes(depth, bs);   // filtro budget dal padre
+
+    // Rimuovi EQUALITY se non ci sono abbastanza variabili in scope
+    if (currScopeFreeVars.size() < 2)
+        candidates.erase(
+            std::remove(candidates.begin(), candidates.end(), SymbolType::EQUALITY),
+            candidates.end());
+
+    // Rimuovi EXISTS/FORALL se non esiste un predicato guard per nessun k
+    int outerSize = static_cast<int>(currScopeFreeVars.size());
+    bool canQuant = false;
+    for (int k = 1; k <= 3; ++k)
+        if (!admissibleGuards(outerSize + k).empty()) { canQuant = true; break; }
+
+    if (!canQuant) {
+        candidates.erase(
+            std::remove(candidates.begin(), candidates.end(), SymbolType::EXISTS),
+            candidates.end());
+        candidates.erase(
+            std::remove(candidates.begin(), candidates.end(), SymbolType::FORALL),
+            candidates.end());
+    }
+
+    return candidates;
 }
 
 
@@ -233,15 +271,11 @@ std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomicLeaf(const std::vector<
 //  buildGuard
 std::unique_ptr<AtomicNode> GuardedGenerator::buildGuard(const std::vector<std::string>& outerScopeVars, const std::vector<std::string>& boundVars)
 {
-
-
     for (int k = static_cast<int>(boundVars.size()); k >= 0; --k) {
         int totalArity = static_cast<int>(outerScopeVars.size()) + k;
         if (totalArity < 1) continue;
 
         auto guards = admissibleGuards(totalArity);
-      
-
         if (guards.empty()) continue;
 
         int idx = guards[randInt(0, static_cast<int>(guards.size()) - 1)];
@@ -274,47 +308,7 @@ std::unique_ptr<ASTNode> GuardedGenerator::wrapQuantifiers(Symbol quantSym, cons
 }
 
 
-SymbolType GuardedGenerator::pickTypeGF(int depth, BudgetState& budget)
-{
-    auto candidates = candidateTypes(depth, budget);
-
-    if (currScopeVars.size() < 2)
-        candidates.erase(std::remove(candidates.begin(), candidates.end(), SymbolType::EQUALITY), candidates.end());
-
-    int outerSize = static_cast<int>(currScopeVars.size());
-    bool canQuant = false;
-    for (int k = 1; k <= 3; ++k)
-        if (!admissibleGuards(outerSize + k).empty()) { canQuant = true; break; }
-    if (!canQuant) {
-        candidates.erase(std::remove(candidates.begin(), candidates.end(), SymbolType::EXISTS), candidates.end());
-        candidates.erase(std::remove(candidates.begin(), candidates.end(), SymbolType::FORALL), candidates.end());
-    }
-
-    if (candidates.empty()) return SymbolType::PREDICATE;
-
-    std::vector<SymbolType> forced;
-    for (auto t : candidates) {
-        int left = 0;
-        switch (t) {
-        case SymbolType::AND:      left = budget.and_left;     break;
-        case SymbolType::OR:       left = budget.or_left;      break;
-        case SymbolType::NEG:      left = budget.not_left;     break;
-        case SymbolType::EXISTS:   left = budget.exists_left;  break;
-        case SymbolType::FORALL:   left = budget.forall_left;  break;
-        case SymbolType::IMPLIES:  left = budget.implies_left; break;
-        case SymbolType::EQUALITY: left = budget.eq_left;      break;
-        default: break;
-        }
-        if (left > 0) forced.push_back(t);
-    }
-
-    auto& pick = (budget.remaining() > depth && !forced.empty()) ? forced : candidates;
-    SymbolType chosen = pick[randInt(0, static_cast<int>(pick.size()) - 1)];
-    budget.consume(chosen);
-    return chosen;
-}
-
-//  Utility
+// Utility
 
 std::string GuardedGenerator::varName(int n) {
     return "x" + std::to_string(n);
@@ -340,7 +334,7 @@ std::vector<int> GuardedGenerator::admissibleAtoms(int maxArity) const
 
 std::vector<std::string> GuardedGenerator::nextVarNames(int k) const
 {
-    int nextIdx = static_cast<int>(currScopeVars.size()) + 1;
+    int nextIdx = static_cast<int>(currScopeFreeVars.size()) + 1;
     std::vector<std::string> vars;
     vars.reserve(k);
     for (int i = 0; i < k; ++i)

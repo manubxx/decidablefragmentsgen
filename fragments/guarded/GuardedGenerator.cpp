@@ -77,7 +77,7 @@ std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
         return finalize(std::move(formula), "axiom");
     }
 
-    //  UNSAT  —  φ ∧ ¬φ  (clone garantisce stessa formula)
+    //  UNSAT  —  φ ∧ ¬φ 
     if (cfg.mode == GenMode::UNSAT) {
         static constexpr int MAX_RETRY = 500;
         std::unique_ptr<ASTNode> formula;
@@ -86,12 +86,9 @@ std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
         for (int attempt = 0; attempt < MAX_RETRY; ++attempt) {
             BudgetState bs(cfg.budget, rng_);
             try {
+                
                 currScopeFreeVars = { "x1" };
-                auto phi = buildGF(cfg.depth, bs);
-                auto copy = phi->clone();                           // ← clone, non buildGF separato
-                formula = std::make_unique<BinaryConnNode>(
-                    Symbol::and_(), std::move(phi),
-                    std::make_unique<NegNode>(std::move(copy)));   // φ ∧ ¬φ garantito UNSAT
+                formula = generateUNSAT(cfg.depth, bs);
             }
             catch (const std::exception& e) {
                 if (attempt < 3)
@@ -124,7 +121,7 @@ std::unique_ptr<ASTNode> GuardedGenerator::generateSAT(int depth, int /*domainSi
 //  buildAtomic  (override FormulaBuilder)
 std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomic(const std::string& /*currentVar*/)
 {
-    return buildAtomicLeaf(currScopeFreeVars);
+    return buildAtomicGF(currScopeFreeVars);
 }
 
 
@@ -132,16 +129,15 @@ std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomic(const std::string& /*c
 std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budget)
 {
     if (depth == 0)
-        return buildAtomicLeaf(currScopeFreeVars);
+        return buildAtomicGF(currScopeFreeVars);
 
-    // candidateTypesGF applica i vincoli GF (EQUALITY, EXISTS/FORALL)
-    // e restituisce la lista già filtrata da passare a pickType.
+  
     auto candidates = candidateTypesGF(depth, budget);
 
     if (candidates.empty())
-        return buildAtomicLeaf(currScopeFreeVars);
+        return buildAtomicGF(currScopeFreeVars);
 
-    // ↓ overload con candidati: tutta la logica forced/consume nel padre
+  
     SymbolType chosen = pickType(depth, budget, candidates);
 
     switch (chosen) {
@@ -210,7 +206,7 @@ std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budge
     case SymbolType::PREDICATE:
     case SymbolType::VARIABLE:
     default:
-        return buildAtomicLeaf(currScopeFreeVars);
+        return buildAtomicGF(currScopeFreeVars);
     }
 }
 
@@ -249,7 +245,7 @@ std::vector<SymbolType> GuardedGenerator::candidateTypesGF(int depth, const Budg
 
 
 //  buildAtomicLeaf
-std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomicLeaf(const std::vector<std::string>& vars)
+std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomicGF(const std::vector<std::string>& vars)
 {
     auto admissible = admissibleAtoms(static_cast<int>(vars.size()));
     if (admissible.empty())

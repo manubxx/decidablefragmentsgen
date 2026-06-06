@@ -65,8 +65,6 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
     return formula->toString();
 }
 
-
-// generateUNSAT
 std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& budget) {
     if (budget.and_left == 0)
         throw std::logic_error("generateUNSAT: budget AND exhausted");
@@ -78,24 +76,38 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
 
     int childDepth = (depth > 0) ? depth - 1 : 0;
 
-    BudgetState lastbudget = budget;
-    auto phi = build(childDepth, startVar(), budget);
+    // Halved budget; phi will never consume more budget than clone 
+    BudgetState phiBudget = budget;
+    phiBudget.and_left /= 2;
+    phiBudget.or_left /= 2;
+    phiBudget.not_left /= 2;
+    phiBudget.exists_left /= 2;
+    phiBudget.forall_left /= 2;
+    phiBudget.implies_left /= 2;
+    phiBudget.eq_left /= 2;
+
+    auto phi = build(childDepth, startVar(), phiBudget);
     auto copy = phi->clone();
 
-    // Apply the consumed delta a second time to the clone.
-    auto applyDelta = [](int& current, int budget_old, int budget_new) {
-        if (budget_old > 0) current = std::max(0, current - (budget_old - budget_new));  };
 
-    applyDelta(budget.and_left, lastbudget.and_left, budget.and_left);
-    applyDelta(budget.or_left, lastbudget.or_left, budget.or_left);
-    applyDelta(budget.not_left, lastbudget.not_left, budget.not_left);
-    applyDelta(budget.exists_left, lastbudget.exists_left, budget.exists_left);
-    applyDelta(budget.forall_left, lastbudget.forall_left, budget.forall_left);
-    applyDelta(budget.implies_left, lastbudget.implies_left, budget.implies_left);
-    applyDelta(budget.eq_left, lastbudget.eq_left, budget.eq_left);
+    auto applyDoubleDelta = [](int& realBudget, int oldPhi, int newPhi) {
+        int consumed = oldPhi - newPhi;
+        realBudget = std::max(0, realBudget - (consumed * 2));
+        };
 
-    return std::make_unique<BinaryConnNode>(
-        Symbol::and_(), std::move(phi), std::make_unique<NegNode>(std::move(copy)));
+    BudgetState startPhiBudget = budget; // before /= 2
+
+    applyDoubleDelta(budget.and_left, startPhiBudget.and_left / 2, phiBudget.and_left);
+    applyDoubleDelta(budget.or_left,  startPhiBudget.or_left / 2, phiBudget.or_left);
+    applyDoubleDelta(budget.not_left, startPhiBudget.not_left / 2, phiBudget.not_left);
+    applyDoubleDelta(budget.exists_left, startPhiBudget.exists_left / 2, phiBudget.exists_left);
+    applyDoubleDelta(budget.forall_left, startPhiBudget.forall_left / 2, phiBudget.forall_left);
+    applyDoubleDelta(budget.implies_left, startPhiBudget.implies_left / 2, phiBudget.implies_left);
+    applyDoubleDelta(budget.eq_left, startPhiBudget.eq_left / 2, phiBudget.eq_left);
+
+    // UNSAT: phi AND (NOT copy)
+    return std::make_unique<BinaryConnNode>(Symbol::and_(), std::move(phi), std::make_unique<NegNode>(std::move(copy))
+    );
 }
 
 // candidateTypes

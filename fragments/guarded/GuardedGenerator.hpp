@@ -34,7 +34,7 @@ private:
 
     std::unique_ptr<ASTNode> buildGF(int depth, BudgetState& budget);
 
-    std::unique_ptr<AtomicNode> buildAtomicLeaf(const std::vector<std::string>& vars);
+    std::unique_ptr<AtomicNode> buildAtomicGF(const std::vector<std::string>& vars);
    
     std::unique_ptr<AtomicNode> buildGuard(const std::vector<std::string>& scopeVars, const std::vector<std::string>& boundVars);  // alpha(x-bar, y-bar): arity == scopeVars.size() + boundVars.size()
 

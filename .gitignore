@@ -1,8 +1,8 @@
-# Cartelle di build di CMake e Visual Studio
-/out/
-/build/
-/.vs/
-/CMakeFiles/
+# Cartelle di build di CMake e Visual Studio ovunque nel progetto
+**/out/
+**/build/
+**/.vs/
+**/CMakeFiles/
 
 # File binari ed eseguibili
 *.exe

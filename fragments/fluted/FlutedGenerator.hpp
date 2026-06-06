@@ -33,7 +33,7 @@ private:
 
     std::vector<SymbolType> candidateTypesFL(int depth, int stackDepth, const BudgetState& bs) const;
 
-    std::unique_ptr<AtomicNode> buildAtomicLeaf(int stackDepth);
+    std::unique_ptr<AtomicNode> buildAtomicFL(int stackDepth);
     std::unique_ptr<EqualityNode> buildEqualityLeaf(int stackDepth);
    
 

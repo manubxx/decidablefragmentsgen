@@ -71,7 +71,7 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
         return finalize(std::move(formula), role);
     }
 
-    //  UNSAT  —  φ ∧ ¬φ  (clone garantisce stessa formula)
+    //  UNSAT  —  φ ∧ ¬φ  
     if (cfg.mode == GenMode::UNSAT) {
         static constexpr int MAX_RETRY = 500;
         std::unique_ptr<ASTNode> formula;
@@ -79,14 +79,9 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
 
         for (int attempt = 0; attempt < MAX_RETRY; ++attempt) {
             BudgetState bs(cfg.budget, rng_);
-            try {
-                auto phi = buildFL(cfg.depth, 0, bs);
-                auto copy = phi->clone();                           // ← clone, non buildFL separato
-                formula = std::make_unique<BinaryConnNode>(
-                    Symbol::and_(), std::move(phi),
-                    std::make_unique<NegNode>(std::move(copy)));   // φ ∧ ¬φ garantito UNSAT
-            }
-            catch (const std::exception&) { continue; }
+
+            try { formula = generateUNSAT(cfg.depth, bs); }
+            catch (const std::exception&) {continue; }
 
             if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
                 budgetOk = true;
@@ -118,7 +113,7 @@ std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomic(const std::string& curr
         throw std::invalid_argument("FL::buildAtomic: variable not FL-valid: '" + currentVar);
 
     int stackDepth = std::stoi(currentVar.substr(1));
-    return buildAtomicLeaf(stackDepth);
+    return buildAtomicFL(stackDepth);
 }
 
 
@@ -139,7 +134,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
 
     // base case (leaf)
     if (depth == 0) {
-        if (!admissible.empty()) return buildAtomicLeaf(stackDepth);
+        if (!admissible.empty()) return buildAtomicFL(stackDepth);
         return forcedQuant(0, stackDepth);
     }
 
@@ -148,7 +143,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
     auto candidates = candidateTypesFL(depth, stackDepth, budget);
 
     if (candidates.empty()) {
-        if (!admissible.empty()) return buildAtomicLeaf(stackDepth);
+        if (!admissible.empty()) return buildAtomicFL(stackDepth);
         return forcedQuant(depth, stackDepth);
     }
 
@@ -191,7 +186,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
         return buildEqualityLeaf(stackDepth);
 
     default:
-        if (!admissible.empty()) return buildAtomicLeaf(stackDepth);
+        if (!admissible.empty()) return buildAtomicFL(stackDepth);
         return forcedQuant(depth, stackDepth);
     }
 }
@@ -213,7 +208,7 @@ std::vector<SymbolType> FlutedGenerator::candidateTypesFL(int depth, int stackDe
 
 
 //  buildAtomicLeaf / buildEqualityLeaf
-std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomicLeaf(int stackDepth)
+std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomicFL(int stackDepth)
 {
     auto admissible = admissiblePreds(stackDepth);
     if (admissible.empty())

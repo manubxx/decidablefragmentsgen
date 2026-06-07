@@ -19,18 +19,13 @@ class FiniteModel {
 public:
 
     // Constructor
-    FiniteModel(const std::vector<PredInfo>& vocab,
-        std::mt19937& rng,
-        int domainSize = 0)
+    FiniteModel(const std::vector<PredInfo>& vocab, std::mt19937& rng, int domainSize = 0)
     {
         if (domainSize <= 0)
-            throw std::invalid_argument(
-                "FiniteModel: domainSize non specificato. "
-                "Usa --domain-size n per scegliere la dimensione del dominio.");
+            throw std::invalid_argument("FiniteModel: domainSize non specificato.Usa --domain-size n per scegliere la dimensione del dominio.");
 
         if (domainSize < 2)
-            throw std::invalid_argument(
-                "FiniteModel: domainSize deve essere >= 2");
+            throw std::invalid_argument("FiniteModel: domainSize deve essere >= 2");
 
         // Costruisce il dominio D = {d0, d1, ..., d_{n-1}}
         domain_.reserve(domainSize);
@@ -73,11 +68,7 @@ public:
         return domain_;
     }
 
-    [[nodiscard]] bool evalAtom(
-        const std::string& pred,
-        int               arity,
-        const std::vector<std::string>& atomVars,
-        const std::map<std::string, std::string>& varAssign) const
+    [[nodiscard]] bool evalAtom(const std::string& pred,int arity, const std::vector<std::string>& atomVars, const std::map<std::string, std::string>& varAssign) const
     {
         // Risolve le variabili in elementi del dominio
         std::vector<std::string> tuple;
@@ -89,16 +80,12 @@ public:
     }
 
     // Valuta un atomo con una tupla di elementi già risolti
-    [[nodiscard]] bool evalAtomDirect(
-        const std::string& pred,
-        const std::vector<std::string>& tuple) const
+    [[nodiscard]] bool evalAtomDirect(const std::string& pred,const std::vector<std::string>& tuple) const
     {
         return interp_.at(pred).at(tuple);
     }
 
 private:
     std::vector<std::string> domain_;
-
-    std::map<std::string,
-        std::map<std::vector<std::string>, bool>> interp_;
+    std::map<std::string, std::map<std::vector<std::string>, bool>> interp_;
 };

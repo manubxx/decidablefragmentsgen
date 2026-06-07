@@ -86,7 +86,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     phiBudget.implies_left /= 2;
     phiBudget.eq_left /= 2;
 
-    auto phi = build(childDepth, startVar(), phiBudget);
+    auto phi = buildComponentUNSAT(childDepth, phiBudget);
     auto copy = phi->clone();
 
 

@@ -3,6 +3,7 @@
 #include "fragments/fo2/FO2Generator.hpp"
 #include "fragments/fluted/FlutedGenerator.hpp"
 #include "fragments/guarded/GuardedGenerator.hpp"
+#include "fragments/unarynegation/UnaryNegGenerator.hpp"
 #include "vampire/VampireRunner.hpp"
 #include <iostream>
 
@@ -102,6 +103,11 @@ int main(int argc, char* argv[])
     else if (args.fragment == "guarded") {
         printHeader("Guarded", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
         GuardedGenerator gen(args.cfg.vocab, args.seed);
+        failures = runGenerator(gen, args.cfg, args.count, args.verify, runnerPtr, args.vampireTimeout);
+    }
+    else if (args.fragment == "unaryneg") {
+        printHeader("UnaryNegation", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
+        UnaryNegGenerator gen(args.cfg.vocab, args.seed);
         failures = runGenerator(gen, args.cfg, args.count, args.verify, runnerPtr, args.vampireTimeout);
     }
 

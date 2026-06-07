@@ -67,8 +67,7 @@ protected:
             , forall_left(sample(b.forall_count, rng))
             , implies_left(sample(b.implies_count, rng))
             , eq_left(sample(b.eq_count, rng))
-        {
-        }
+        {}
 
         [[nodiscard]] bool canUse(SymbolType t) const {
             switch (t) {
@@ -109,12 +108,15 @@ protected:
         }
 
         [[nodiscard]] bool satisfied() const { return remaining() == 0; }
+
     };
 
     // Pure virtual methods
     [[nodiscard]] virtual std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) = 0;
 
     [[nodiscard]] virtual std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) = 0;
+
+    [[nodiscard]] virtual std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) = 0; 
 
     [[nodiscard]] virtual std::string startVar() const = 0;
     [[nodiscard]] virtual std::string nextVar(const std::string& currentVar) const = 0;

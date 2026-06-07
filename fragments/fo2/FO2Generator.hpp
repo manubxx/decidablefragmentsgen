@@ -12,7 +12,6 @@ public:
 protected:
 
     // FormulaBuilder Interface
-
     [[nodiscard]] std::string startVar() const override { return "v1"; }
 
     [[nodiscard]] std::string nextVar(const std::string& v) const override { return (v == "v1") ? "v2" : "v1";}
@@ -20,6 +19,8 @@ protected:
     [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;
 
     [[nodiscard]] std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) override;
+
+    [[nodiscard]]  std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) override;
 
 private:
 

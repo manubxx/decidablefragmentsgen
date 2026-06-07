@@ -26,26 +26,27 @@ protected:
 
     [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;
     [[nodiscard]] std::unique_ptr<ASTNode>    generateSAT(int depth, int domainSize, BudgetState& budget) override;
+    [[nodiscard]] virtual std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) override;
 
     [[nodiscard]] std::string startVar() const override;
     [[nodiscard]] std::string nextVar(const std::string& current) const override;
 
 private:
 
-    // Core recursive builder 
+    std::vector<PredInfo> vocab_;
+    std::vector<PredInfo> activeVocab_;
 
-    // currFreeVars : variables that are free in the current formula context
-    // Negation is legal only when freeVars.size() <= 1.
+    // Core recursive builder 
     [[nodiscard]] std::unique_ptr<ASTNode> buildUN(int depth, const std::vector<std::string>& currFreeVars, BudgetState& budget);
 
-    // Builds a single atomic leaf using variables drawn from `scope`.
-    [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomicUN(const std::vector<std::string>& scope);
-
+  
     // Builds a negated sub-formula.
-    // Precondition: freeVars.size() <= 1  (enforced by the caller).
     [[nodiscard]] std::unique_ptr<ASTNode> buildNegatedBody(int depth, const std::vector<std::string>& currFreeVars, BudgetState& budget);
 
-    // candidateTypes restricted to what is legal given freeVars.
+    // FormulaBuilder::buildAtomic specification
+    [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomicUN(const std::vector<std::string>& scope);
+
+    // FormulaBuilder::candidateTypes specification
     [[nodiscard]] std::vector<SymbolType> candidateTypesUN(int depth, const std::vector<std::string>& currFreeVars, const BudgetState& bs) const;
 
   
@@ -57,7 +58,6 @@ private:
 
     [[nodiscard]] std::vector<Symbol> predArgNames(const std::vector<std::string>& scope, int arity);
 
-    // Data
-    std::vector<PredInfo> vocab_;
-    std::vector<PredInfo> activeVocab_;   
+    
+     
 };

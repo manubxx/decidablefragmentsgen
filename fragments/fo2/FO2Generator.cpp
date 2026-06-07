@@ -70,6 +70,10 @@ std::unique_ptr<EqualityNode> FO2Generator::buildEqualityAtom(const std::string&
     return std::make_unique<EqualityNode>(Symbol::var(lhs), Symbol::var(rhs));
 }
 
+std::unique_ptr<ASTNode> FO2Generator::buildComponentUNSAT(int depth, BudgetState& budget) {
+    // FO2 chiama semplicemente il suo build ricorsivo
+    return build(depth, startVar(), budget);
+}
 
 //  build (override) 
 std::unique_ptr<ASTNode> FO2Generator::build(int depth, const std::string& currentVar,

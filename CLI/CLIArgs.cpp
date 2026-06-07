@@ -10,6 +10,7 @@
 #include <fragments/fo2/FO2vocab.hpp>
 #include <fragments/fluted/FLvocab.hpp>
 #include <fragments/guarded/GFvocab.hpp>
+#include <fragments/unarynegation/UNvocab.hpp>
 
 namespace {
 
@@ -182,8 +183,8 @@ AppArgs parseArgs(int argc, char* argv[])
         std::string val = argv[++i];
 
         if (arg == "--fragment") {
-            if (val != "fo2" && val != "fluted" && val != "guarded")
-                throw std::invalid_argument("Unsupported fragment: '" + val + "' (allowed: fo2, fluted, guarded)");
+            if (val != "fo2" && val != "fluted" && val != "guarded" && val!="unaryneg")
+                throw std::invalid_argument("Unsupported fragment: '" + val + "' (allowed: fo2, fluted, guarded, unaryneg)");
             args.fragment = val; 
         }
 
@@ -195,9 +196,9 @@ AppArgs parseArgs(int argc, char* argv[])
         else if (arg == "--output")          args.cfg.output = parseOutput(val);
         else if (arg == "--vampire-path")    args.vampirePath = val;
         else if (arg == "--vampire-timeout") args.vampireTimeout = std::stoi(val);
-        else if (arg == "--seed") { args.seed = static_cast<unsigned>(std::stoul(val)); hasSeed = true; }
+        else if (arg == "--seed")          { args.seed = static_cast<unsigned>(std::stoul(val)); hasSeed = true; }
         else if (arg == "--arity")           arityFilter = parseArityFilter(val);
-        else if (arg == "--preds") { newVocab = parsePreds(val, args.fragment); hasExplicitVocab = true; }
+        else if (arg == "--preds")         { newVocab = parsePreds(val, args.fragment); hasExplicitVocab = true; }
         else if (arg == "--and")             args.cfg.budget.and_count = parseRange(val);
         else if (arg == "--or")              args.cfg.budget.or_count = parseRange(val);
         else if (arg == "--not")             args.cfg.budget.not_count = parseRange(val);
@@ -215,6 +216,7 @@ AppArgs parseArgs(int argc, char* argv[])
         if (args.fragment == "fo2") { newVocab = kVocabFO2; }
         else if (args.fragment == "fluted") { newVocab = kVocabFL; }
         else if (args.fragment == "guarded") { newVocab = kVocabGF; }
+        else if (args.fragment == "unaryneg") { newVocab = kVocabUN; }
     }
 
     // filter vocabulary

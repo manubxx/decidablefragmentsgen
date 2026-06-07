@@ -23,6 +23,9 @@ public:
     std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) override;
     
     std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;
+
+    std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) override;
+
 private:
 
     std::vector<PredInfo> vocab_;      
@@ -34,7 +37,7 @@ private:
     std::vector<SymbolType> candidateTypesFL(int depth, int stackDepth, const BudgetState& bs) const;
 
     std::unique_ptr<AtomicNode> buildAtomicFL(int stackDepth);
-    std::unique_ptr<EqualityNode> buildEqualityLeaf(int stackDepth);
+    std::unique_ptr<EqualityNode> buildEqualityAtom(int stackDepth);
    
 
     // Utility

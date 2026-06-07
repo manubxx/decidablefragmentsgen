@@ -124,6 +124,10 @@ std::unique_ptr<AtomicNode> UnaryNegGenerator::buildAtomic(const std::string& cu
 }
 
 
+std::unique_ptr<ASTNode> UnaryNegGenerator::buildComponentUNSAT(int depth, BudgetState& budget) {
+    return buildUN(depth, {}, budget);
+}
+
 //  buildUN  —  recursive builder
 //  freeVars : variables that are free in the current sub-formula.
 std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector<std::string>& currFreeVars, BudgetState& budget)
@@ -177,10 +181,10 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
     SymbolType chosen = pickType(depth, budget, candidates);
 
     if (chosen == SymbolType::PREDICATE) {
-        auto adm = admissiblePreds(freeVars);
+        auto adm = admissiblePreds(currFreeVars);
         if (!adm.empty())
-            return buildAtomicUN(freeVars);
-        return forcedQuant(depth, freeVars);
+            return buildAtomicUN(currFreeVars);
+        return forcedQuant(depth, currFreeVars);
     }
 
     switch (chosen) {
@@ -220,7 +224,7 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
     }
 
     case SymbolType::EQUALITY: {
-        if (freeVars.size() >= 2) {
+        if (currFreeVars.size() >= 2) {
             int i = randInt(0, static_cast<int>(currFreeVars.size()) - 1);
             int j;
             do { j = randInt(0, static_cast<int>(currFreeVars.size()) - 1); } while (j == i);
@@ -278,7 +282,7 @@ std::vector<SymbolType> UnaryNegGenerator::candidateTypesUN(int depth, const std
 
 
 //  buildAtomicLeaf
-std::unique_ptr<AtomicNode> UnaryNegGenerator::buildAtomicLeaf(const std::vector<std::string>& scope)
+std::unique_ptr<AtomicNode> UnaryNegGenerator::buildAtomicUN(const std::vector<std::string>& scope)
 {
     auto adm = admissiblePreds(scope);
     if (adm.empty())

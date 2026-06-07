@@ -115,6 +115,10 @@ std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomic(const std::string& curr
     return buildAtomicFL(stackDepth);
 }
 
+std::unique_ptr<ASTNode> FlutedGenerator::buildComponentUNSAT(int depth, BudgetState& budget) {
+    // Il Fluted chiamerà la sua funzione speciale passando i parametri che servono a lui
+    return buildFL(depth, 0, budget);
+}
 
 //  buildFL
 std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, BudgetState& budget)
@@ -179,7 +183,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
     }
 
     case SymbolType::EQUALITY:
-        return buildEqualityLeaf(stackDepth);
+        return buildEqualityAtom(stackDepth);
 
     default:
         if (!admissible.empty()) return buildAtomicFL(stackDepth);
@@ -215,7 +219,7 @@ std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomicFL(int stackDepth)
     return std::make_unique<AtomicNode>(Symbol::pred(p.name, p.arity), std::move(args));
 }
 
-std::unique_ptr<EqualityNode> FlutedGenerator::buildEqualityLeaf(int stackDepth)
+std::unique_ptr<EqualityNode> FlutedGenerator::buildEqualityAtom(int stackDepth)
 {
     if (stackDepth < 2)
         throw std::logic_error("FL:buildEqualityAtom: stackDepth=" + std::to_string(stackDepth) + " < 2");

@@ -125,6 +125,11 @@ std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomic(const std::string& /*c
 }
 
 
+std::unique_ptr<ASTNode> GuardedGenerator::buildComponentUNSAT(int depth, BudgetState& budget)
+{
+    return buildGF(depth, budget);
+}
+
 //  buildGF — recursive
 std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budget)
 {

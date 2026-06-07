@@ -14,6 +14,8 @@ add_executable(DecidableFragmentsGen
     "fragments/fluted/FLvocab.hpp"
     "fragments/guarded/GuardedGenerator.cpp"
     "fragments/guarded/GFvocab.hpp"
+    "fragments/unarynegation/UnaryNegGenerator.cpp"
+    "fragments/unarynegation/UNvocab.hpp"
     "formulae/FormulaBuilder.cpp"
     "vampire/VampireRunner.cpp"
     "CLI/CLIPrinter.cpp"

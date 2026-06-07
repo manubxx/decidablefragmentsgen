@@ -26,7 +26,7 @@ protected:
 
     [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;
     [[nodiscard]] std::unique_ptr<ASTNode>    generateSAT(int depth, int domainSize, BudgetState& budget) override;
-    [[nodiscard]] virtual std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) override;
+    [[nodiscard]] std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) override;
 
     [[nodiscard]] std::string startVar() const override;
     [[nodiscard]] std::string nextVar(const std::string& current) const override;

@@ -163,8 +163,8 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
 
     // Base case: depth == 0  
     if (depth == 0) {
-        auto adm = admissiblePreds(currFreeVars);
-        if (!adm.empty())
+        auto admPreds = admissiblePreds(currFreeVars);
+        if (!admPreds.empty())
             return buildAtomicUN(currFreeVars);
         return forcedQuant(0, currFreeVars);
     }
@@ -172,8 +172,8 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
     auto candidates = candidateTypesUN(depth, currFreeVars, budget);
 
     if (candidates.empty()) {
-        auto adm = admissiblePreds(currFreeVars);
-        if (!adm.empty())
+        auto admPreds = admissiblePreds(currFreeVars);
+        if (!admPreds.empty())
             return buildAtomicUN(currFreeVars);
         return forcedQuant(depth, currFreeVars);
     }
@@ -181,8 +181,8 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
     SymbolType chosen = pickType(depth, budget, candidates);
 
     if (chosen == SymbolType::PREDICATE) {
-        auto adm = admissiblePreds(currFreeVars);
-        if (!adm.empty())
+        auto admPreds = admissiblePreds(currFreeVars);
+        if (!admPreds.empty())
             return buildAtomicUN(currFreeVars);
         return forcedQuant(depth, currFreeVars);
     }
@@ -234,8 +234,8 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
     }
 
     default: {
-        auto adm = admissiblePreds(currFreeVars);
-        if (!adm.empty())
+        auto admPreds = admissiblePreds(currFreeVars);
+        if (!admPreds.empty())
             return buildAtomicUN(currFreeVars);
         return forcedQuant(depth, currFreeVars);
     }
@@ -247,8 +247,10 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
 std::unique_ptr<ASTNode> UnaryNegGenerator::buildNegatedBody(int depth, const std::vector<std::string>& currFreeVars, BudgetState& budget)
 {
     std::vector<std::string> unaryScope;
-    if (!currFreeVars.empty())
-        unaryScope = { currFreeVars[0] };
+    if (!currFreeVars.empty()) {
+        int pick = randInt(0, static_cast<int>(currFreeVars.size()) - 1);
+        unaryScope = { currFreeVars[pick] };
+    }
 
     auto body = buildUN(depth, unaryScope, budget);
     return std::make_unique<NegNode>(std::move(body));

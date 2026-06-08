@@ -16,7 +16,8 @@
 class UnaryNegGenerator : public FormulaBuilder {
 public:
     explicit UnaryNegGenerator(std::vector<PredInfo> vocab, unsigned seed);
-
+     
+    // Formula
     [[nodiscard]] std::string fragmentName() const override;
     [[nodiscard]] std::string generateFormatted(const GenConfig& cfg) override;
 

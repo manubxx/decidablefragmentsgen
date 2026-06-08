@@ -50,6 +50,6 @@ private:
     [[nodiscard]] std::vector<std::string> nextVarNames(int k) const;   //nextFreeIdx of last var in currScopeVars
 
     [[nodiscard]] std::vector<int> admissibleGuards(int totalVars) const; //arity == totalVars (buildGuard)
-    [[nodiscard]] std::vector<int> admissibleAtoms(int maxArity) const;  //arity <= maxArity   (buildAtomicLeaf)
+    [[nodiscard]] std::vector<int> admissiblePreds(int maxArity) const;  //arity <= maxArity   (buildAtomicLeaf)
 
 };

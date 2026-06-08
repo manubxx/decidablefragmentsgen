@@ -194,7 +194,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
 //candidateTypes: FormulaBuilder::candidateTypes specification for FL
 std::vector<SymbolType> FlutedGenerator::candidateTypesFL(int depth, int stackDepth, const BudgetState& bs) const
 {
-    auto candidates = candidateTypes(depth, bs);   // filtro budget dal padre
+    auto candidates = candidateTypes(depth, bs); 
 
     if (stackDepth < 2)
         candidates.erase(

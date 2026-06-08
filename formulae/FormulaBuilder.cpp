@@ -90,9 +90,13 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     auto copy = phi->clone();
 
 
-    auto applyDoubleDelta = [](int& realBudget, int oldPhi, int newPhi) {
-        int consumed = oldPhi - newPhi;
-        realBudget = std::max(0, realBudget - (consumed * 2));
+    auto applyDoubleDelta = [](int& realBudget, int startBudget, int finalPhiBudget) {
+        int allocatedToPhi = startBudget / 2;      
+        int remainder = startBudget - (allocatedToPhi * 2); 
+        int consumedByPhi = allocatedToPhi - finalPhiBudget;
+        int totalConsumed = consumedByPhi * 2;
+
+        realBudget = std::max(0, startBudget - totalConsumed - remainder);
         };
 
     BudgetState startPhiBudget = budget; // before /= 2
@@ -150,7 +154,8 @@ SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget,
         if (left > 0) forced.push_back(t);
     }
 
-    auto& pick = (budget.remaining() > depth && !forced.empty()) ? forced : candidates;
+    //auto& pick = (budget.remaining() > depth && !forced.empty()) ? forced : candidates;
+    auto& pick = (!forced.empty()) ? forced : candidates;
 
     SymbolType chosen = pick[randInt(0, static_cast<int>(pick.size()) - 1)];
     budget.consume(chosen);

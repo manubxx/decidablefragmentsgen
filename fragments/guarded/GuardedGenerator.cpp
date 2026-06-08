@@ -249,7 +249,7 @@ std::vector<SymbolType> GuardedGenerator::candidateTypesGF(int depth, const Budg
 //  buildAtomicLeaf
 std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomicGF(const std::vector<std::string>& vars)
 {
-    auto admissible = admissibleAtoms(static_cast<int>(vars.size()));
+    auto admissible = admissiblePreds(static_cast<int>(vars.size()));
     if (admissible.empty())
         throw std::logic_error("GuardedGenerator::buildAtomicLeaf: no predicate found for scope " + std::to_string(vars.size()));
 
@@ -318,7 +318,7 @@ std::vector<int> GuardedGenerator::admissibleGuards(int totalVars) const
     return idx;
 }
 
-std::vector<int> GuardedGenerator::admissibleAtoms(int maxArity) const
+std::vector<int> GuardedGenerator::admissiblePreds(int maxArity) const
 {
     std::vector<int> idx;
     for (int i = 0; i < static_cast<int>(activeVocab_.size()); ++i)

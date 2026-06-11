@@ -48,6 +48,5 @@ private:
 
     std::vector<int> admissiblePreds(int stackDepth) const;
 
-    int minArity() const;
 };
 #endif // FLUTED_GENERATOR_HPP

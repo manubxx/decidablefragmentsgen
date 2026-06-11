@@ -64,10 +64,11 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
         if (cfg.budget.hasAnyConstraint() && !budgetOk)
             throw std::invalid_argument("FL: unable to meet required budget with depth=" + std::to_string(cfg.depth));
 
-        if (!formula) return "";
+        if (!formula)
+            throw std::logic_error("FL: formula is null after successful budget loop");
 
-        std::string role = (cfg.mode == GenMode::SAT) ? "axiom" : "axiom";
-        return finalize(std::move(formula), role);
+        
+        return finalize(std::move(formula), "axiom");
     }
 
     if (cfg.mode == GenMode::UNSAT)
@@ -238,10 +239,3 @@ std::vector<int> FlutedGenerator::admissiblePreds(int stackDepth) const
     return idx;
 }
 
-int FlutedGenerator::minArity() const
-{
-    int m = INT_MAX;
-    for (const auto& p : activeVocab_)
-        if (p.arity < m) m = p.arity;
-    return (m == INT_MAX) ? 1 : m;
-}

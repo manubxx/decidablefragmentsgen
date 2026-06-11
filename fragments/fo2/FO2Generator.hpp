@@ -11,6 +11,8 @@ public:
 
 protected:
 
+    std::vector<PredInfo> vocab_;
+    std::vector<PredInfo> activeVocab_;
     // FormulaBuilder Interface
     [[nodiscard]] std::string startVar() const override { return "v1"; }
 
@@ -22,10 +24,10 @@ protected:
 
     [[nodiscard]]  std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) override;
 
+
 private:
 
-    std::vector<PredInfo> vocab_;
-    std::vector<PredInfo> activeVocab_;
+    
 
     std::unique_ptr<ASTNode>      build(int depth, const std::string& currentVar, BudgetState& budget);
     std::unique_ptr<EqualityNode> buildEqualityAtom(const std::string& currentVar);

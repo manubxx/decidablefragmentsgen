@@ -24,7 +24,8 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
                 formula = build(cfg.depth, startVar(), bs);
                 break;
             case GenMode::SAT:
-                formula = generateSAT(cfg.depth, cfg.domainSize, bs);
+            case GenMode::SATBUILD:
+                formula = generateSAT(cfg.depth, cfg.domainSize, bs); //Polymorphism ensures that satbuild is called only by the fragments that implement it.
                 break;
             case GenMode::UNSAT:
                 formula = generateUNSAT(cfg.depth, bs);

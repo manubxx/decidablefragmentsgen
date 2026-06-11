@@ -9,7 +9,7 @@ struct PredInfo {
     int         arity;
 };
 
-enum class GenMode { FREE, SAT, UNSAT };
+enum class GenMode { FREE, SAT, UNSAT, SATBUILD};
 
 enum class TransformMode { NONE, NNF };
 

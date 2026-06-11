@@ -30,7 +30,8 @@ namespace {
         if (s == "sat")   return GenMode::SAT;
         if (s == "unsat") return GenMode::UNSAT;
         if (s == "free")  return GenMode::FREE;
-        throw std::invalid_argument("Unknown mode: '" + s + "' (allowed: free, sat, unsat)");
+        if (s == "satbuild")  return GenMode::SATBUILD;
+        throw std::invalid_argument("Unknown mode: '" + s + "' (allowed: free, sat, unsat, satbuild(ONLY FO2)");
     }
 
     // command --transform
@@ -229,11 +230,16 @@ AppArgs parseArgs(int argc, char* argv[])
         args.seed = rd();
     }
 
+    // consistency check satbuild(only FO2)
+    if (args.cfg.mode == GenMode::SATBUILD && args.fragment != "fo2")
+        throw std::invalid_argument("--mode satbuild is only available for --fragment fo2");
+
     // consistency check vampire output
     if (args.verify && args.cfg.output != OutputFormat::TPTP) {
         std::cerr << "[INFO] --verify requires TPTP output format. Forcing output to 'tptp'.\n";
         args.cfg.output = OutputFormat::TPTP;
     }
+
 
     // Semantic validation
     if (args.cfg.depth < 0)       throw std::invalid_argument("--depth must be >= 0");

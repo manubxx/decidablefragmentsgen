@@ -136,9 +136,7 @@ std::vector<SymbolType> FormulaBuilder::candidateTypes(int depth, const BudgetSt
     return candidates;
 }
 
-// pickType — overload principale: riceve i candidati già filtrati dal chiamante.
-// Ogni frammento costruisce la propria lista (es. candidateTypesUN, pickTypeGF)
-// e delega qui tutta la logica forced/random + budget.consume.
+// pickType 
 SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget,
     const std::vector<SymbolType>& candidates) {
     if (candidates.empty()) return SymbolType::PREDICATE;

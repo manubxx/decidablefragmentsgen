@@ -70,30 +70,8 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
         return finalize(std::move(formula), role);
     }
 
-    //  UNSAT  —  φ ∧ ¬φ  
-    if (cfg.mode == GenMode::UNSAT) {
-        static constexpr int MAX_RETRY = 500;
-        std::unique_ptr<ASTNode> formula;
-        bool budgetOk = false;
-
-        for (int attempt = 0; attempt < MAX_RETRY; ++attempt) {
-            BudgetState bs(cfg.budget, rng_);
-
-            try { formula = generateUNSAT(cfg.depth, bs); }
-            catch (const std::exception&) {continue; }
-
-            if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
-                budgetOk = true;
-                break;
-            }
-        }
-
-        if (cfg.budget.hasAnyConstraint() && !budgetOk)
-            throw std::invalid_argument("FL UNSAT: unable to meet requested budget.");
-        if (!formula) return "";
-
-        return finalize(std::move(formula), "negated_conjecture");
-    }
+    if (cfg.mode == GenMode::UNSAT)
+        return FormulaBuilder::generateFormatted(cfg);
 
     throw std::invalid_argument("FL: unrecognized mode.");
 }
@@ -109,14 +87,14 @@ std::unique_ptr<ASTNode> FlutedGenerator::generateSAT(int depth, int /*domainSiz
 std::unique_ptr<AtomicNode> FlutedGenerator::buildAtomic(const std::string& currentVar)
 {
     if (currentVar.empty() || currentVar[0] != 'x')
-        throw std::invalid_argument("FL::buildAtomic: variable not FL-valid: '" + currentVar);
+        throw std::invalid_argument("FL::buildAtomic: variable not FL-valid: '" + currentVar + "'");
 
     int stackDepth = std::stoi(currentVar.substr(1));
     return buildAtomicFL(stackDepth);
 }
 
 std::unique_ptr<ASTNode> FlutedGenerator::buildComponentUNSAT(int depth, BudgetState& budget) {
-    // Il Fluted chiamerà la sua funzione speciale passando i parametri che servono a lui
+   
     return buildFL(depth, 0, budget);
 }
 
@@ -126,12 +104,20 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
     auto admissible = admissiblePreds(stackDepth);
 
     auto forcedQuant = [&](int currDepth, int currStDepth) -> std::unique_ptr<ASTNode> {
-        bool exists = (randInt(0, 1) == 0);
-        int  nextStDepth = currStDepth + 1;
-        auto varSym = Symbol::var(varName(nextStDepth));
-        auto quantSym = exists ? Symbol::exists() : Symbol::forall();
+        const bool canExists = budget.canUse(SymbolType::EXISTS);
+        const bool canForall = budget.canUse(SymbolType::FORALL);
+
+        if (!canExists && !canForall)
+            throw std::logic_error("FL::forcedQuant: both EXISTS and FORALL forbidden by budget");
+
+        const bool exists = canExists && (!canForall || randInt(0, 1) == 0);
+        budget.consume(exists ? SymbolType::EXISTS : SymbolType::FORALL);
+        int nextStDepth = currStDepth + 1;
         int nextDepth = currDepth > 0 ? currDepth - 1 : 0;
+        auto quantSym = exists ? Symbol::exists() : Symbol::forall();
+        auto varSym = Symbol::var(varName(nextStDepth));
         auto body = buildFL(nextDepth, nextStDepth, budget);
+
         return std::make_unique<QuantifierNode>(quantSym, varSym, std::move(body));
         };
 

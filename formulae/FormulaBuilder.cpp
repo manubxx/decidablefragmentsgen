@@ -71,49 +71,53 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     if (budget.not_left == 0)
         throw std::logic_error("generateUNSAT: budget NOT exhausted");
 
+   //budget snapshot
+    BudgetState originalBudget = budget;
+
+    
     budget.consume(SymbolType::AND);
     budget.consume(SymbolType::NEG);
 
     int childDepth = (depth > 0) ? depth - 1 : 0;
 
-    // Halved budget; phi will never consume more budget than clone 
+    // phiBudget copy
     BudgetState phiBudget = budget;
-    phiBudget.and_left /= 2;
-    phiBudget.or_left /= 2;
-    phiBudget.not_left /= 2;
-    phiBudget.exists_left /= 2;
-    phiBudget.forall_left /= 2;
-    phiBudget.implies_left /= 2;
-    phiBudget.eq_left /= 2;
+    phiBudget.and_left = (budget.and_left > 0) ? budget.and_left / 2 : budget.and_left;
+    phiBudget.or_left = (budget.or_left > 0) ? budget.or_left / 2 : budget.or_left;
+    phiBudget.not_left = (budget.not_left > 0) ? budget.not_left / 2 : budget.not_left;
+    phiBudget.exists_left = (budget.exists_left > 0) ? budget.exists_left / 2 : budget.exists_left;
+    phiBudget.forall_left = (budget.forall_left > 0) ? budget.forall_left / 2 : budget.forall_left;
+    phiBudget.implies_left = (budget.implies_left > 0) ? budget.implies_left / 2 : budget.implies_left;
+    phiBudget.eq_left = (budget.eq_left > 0) ? budget.eq_left / 2 : budget.eq_left;
 
     auto phi = buildComponentUNSAT(childDepth, phiBudget);
     auto copy = phi->clone();
 
-
+   
     auto applyDoubleDelta = [](int& realBudget, int B, int finalPhiBudget) {
-        if (B <= 0) return;  // unconstrained (-1) or forbidden (0)
+        if (B <= 0) return; // unconstrained (-1) o forbidden (0)
         int allocated = B / 2;
-        int remainder = B - allocated * 2;
+        int remainder = B - allocated * 2;        
         int consumedByPhi = allocated - finalPhiBudget;
         int totalConsumed = consumedByPhi * 2;
         realBudget = std::max(0, B - totalConsumed - remainder);
         };
 
-    // snapshot of budget BEFORE the /=2 split, used as the "B" baseline
-    BudgetState startPhiBudget = budget;
+    applyDoubleDelta(budget.and_left, originalBudget.and_left, phiBudget.and_left);
+    applyDoubleDelta(budget.or_left, originalBudget.or_left, phiBudget.or_left);
+    applyDoubleDelta(budget.not_left, originalBudget.not_left, phiBudget.not_left);
+    applyDoubleDelta(budget.exists_left, originalBudget.exists_left, phiBudget.exists_left);
+    applyDoubleDelta(budget.forall_left, originalBudget.forall_left, phiBudget.forall_left);
+    applyDoubleDelta(budget.implies_left, originalBudget.implies_left, phiBudget.implies_left);
+    applyDoubleDelta(budget.eq_left, originalBudget.eq_left, phiBudget.eq_left);
 
-    applyDoubleDelta(budget.and_left, startPhiBudget.and_left, phiBudget.and_left);
-    applyDoubleDelta(budget.or_left, startPhiBudget.or_left, phiBudget.or_left);
-    applyDoubleDelta(budget.not_left, startPhiBudget.not_left, phiBudget.not_left);
-    applyDoubleDelta(budget.exists_left, startPhiBudget.exists_left, phiBudget.exists_left);
-    applyDoubleDelta(budget.forall_left, startPhiBudget.forall_left, phiBudget.forall_left);
-    applyDoubleDelta(budget.implies_left, startPhiBudget.implies_left, phiBudget.implies_left);
-    applyDoubleDelta(budget.eq_left, startPhiBudget.eq_left, phiBudget.eq_left);
-
-    // UNSAT: phi AND (NOT copy)
-    return std::make_unique<BinaryConnNode>(Symbol::and_(), std::move(phi), std::make_unique<NegNode>(std::move(copy))
+    return std::make_unique<BinaryConnNode>(
+        Symbol::and_(),
+        std::move(phi),
+        std::make_unique<NegNode>(std::move(copy))
     );
 }
+
 
 // candidateTypes
 std::vector<SymbolType> FormulaBuilder::candidateTypes(int depth, const BudgetState& bs) const {

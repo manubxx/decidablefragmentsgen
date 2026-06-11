@@ -126,7 +126,7 @@ protected:
 
     [[nodiscard]] std::unique_ptr<ASTNode> generateUNSAT(int depth, BudgetState& budget);
 
-    [[nodiscard]] std::vector<SymbolType> candidateTypes(int depth, const BudgetState& budget) const;
+    [[nodiscard]] virtual std::vector<SymbolType> candidateTypes(int depth, const BudgetState& budget) const;
 
     SymbolType pickType(int depth, BudgetState& budget);
     SymbolType pickType(int depth, BudgetState& budget, const std::vector<SymbolType>& candidates); //overload 

@@ -45,7 +45,8 @@ std::unique_ptr<AtomicNode> FO2Generator::buildAtomic(const std::string& current
 
     std::vector<Symbol> args;
     if (p.arity == 1) {
-        args.push_back(Symbol::var(currentVar));
+        std::string chosenVar = (randInt(0, 1) == 0) ? currentVar : other;
+        args.push_back(Symbol::var(chosenVar));
     }
     else {
         if (randInt(0, 1) == 0) {
@@ -62,16 +63,14 @@ std::unique_ptr<AtomicNode> FO2Generator::buildAtomic(const std::string& current
 
 
 // buildEqualityAtom
-std::unique_ptr<EqualityNode> FO2Generator::buildEqualityAtom(const std::string& currentVar)
-{
+std::unique_ptr<EqualityNode> FO2Generator::buildEqualityAtom(const std::string& currentVar) {
     const std::string other = nextVar(currentVar);
-    const std::string lhs = (randInt(0, 1) == 0) ? currentVar : other;
-    const std::string rhs = (randInt(0, 1) == 0) ? currentVar : other;
-    return std::make_unique<EqualityNode>(Symbol::var(lhs), Symbol::var(rhs));
+    
+    return std::make_unique<EqualityNode>(Symbol::var(currentVar), Symbol::var(other));
 }
 
 std::unique_ptr<ASTNode> FO2Generator::buildComponentUNSAT(int depth, BudgetState& budget) {
-    // FO2 chiama semplicemente il suo build ricorsivo
+    
     return build(depth, startVar(), budget);
 }
 

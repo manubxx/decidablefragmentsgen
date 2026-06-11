@@ -90,24 +90,25 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     auto copy = phi->clone();
 
 
-    auto applyDoubleDelta = [](int& realBudget, int startBudget, int finalPhiBudget) {
-        int allocatedToPhi = startBudget / 2;      
-        int remainder = startBudget - (allocatedToPhi * 2); 
-        int consumedByPhi = allocatedToPhi - finalPhiBudget;
+    auto applyDoubleDelta = [](int& realBudget, int B, int finalPhiBudget) {
+        if (B <= 0) return;  // unconstrained (-1) or forbidden (0)
+        int allocated = B / 2;
+        int remainder = B - allocated * 2;
+        int consumedByPhi = allocated - finalPhiBudget;
         int totalConsumed = consumedByPhi * 2;
-
-        realBudget = std::max(0, startBudget - totalConsumed - remainder);
+        realBudget = std::max(0, B - totalConsumed - remainder);
         };
 
-    BudgetState startPhiBudget = budget; // before /= 2
+    // snapshot of budget BEFORE the /=2 split, used as the "B" baseline
+    BudgetState startPhiBudget = budget;
 
-    applyDoubleDelta(budget.and_left, startPhiBudget.and_left / 2, phiBudget.and_left);
-    applyDoubleDelta(budget.or_left,  startPhiBudget.or_left / 2, phiBudget.or_left);
-    applyDoubleDelta(budget.not_left, startPhiBudget.not_left / 2, phiBudget.not_left);
-    applyDoubleDelta(budget.exists_left, startPhiBudget.exists_left / 2, phiBudget.exists_left);
-    applyDoubleDelta(budget.forall_left, startPhiBudget.forall_left / 2, phiBudget.forall_left);
-    applyDoubleDelta(budget.implies_left, startPhiBudget.implies_left / 2, phiBudget.implies_left);
-    applyDoubleDelta(budget.eq_left, startPhiBudget.eq_left / 2, phiBudget.eq_left);
+    applyDoubleDelta(budget.and_left, startPhiBudget.and_left, phiBudget.and_left);
+    applyDoubleDelta(budget.or_left, startPhiBudget.or_left, phiBudget.or_left);
+    applyDoubleDelta(budget.not_left, startPhiBudget.not_left, phiBudget.not_left);
+    applyDoubleDelta(budget.exists_left, startPhiBudget.exists_left, phiBudget.exists_left);
+    applyDoubleDelta(budget.forall_left, startPhiBudget.forall_left, phiBudget.forall_left);
+    applyDoubleDelta(budget.implies_left, startPhiBudget.implies_left, phiBudget.implies_left);
+    applyDoubleDelta(budget.eq_left, startPhiBudget.eq_left, phiBudget.eq_left);
 
     // UNSAT: phi AND (NOT copy)
     return std::make_unique<BinaryConnNode>(Symbol::and_(), std::move(phi), std::make_unique<NegNode>(std::move(copy))

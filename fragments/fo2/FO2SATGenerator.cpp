@@ -53,7 +53,7 @@ Targets FO2SATGenerator::complementTargets(const Targets& allAssign, const Targe
     return complement;
 }
 
-// Evaluates AST node semantics recursively on a finite model
+// Evaluates AST node 
 bool FO2SATGenerator::evaluateASTNode(const ASTNode& node, const Assignment& assign, const FiniteModel& model) {
     if (auto* a = dynamic_cast<const AtomicNode*>(&node)) {
         return model.evalAtom(a->predSymbol().name, a->predSymbol().arity, getArgNames(a->args()), assign);

@@ -13,6 +13,7 @@ protected:
 
     std::vector<PredInfo> vocab_;
     std::vector<PredInfo> activeVocab_;
+
     // FormulaBuilder Interface
     [[nodiscard]] std::string startVar() const override { return "v1"; }
 

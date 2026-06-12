@@ -3,7 +3,7 @@
 #include "models/FiniteModel.hpp"
 #include <map>
 
-// Assumendo che questi tipi siano definiti nel tuo progetto
+
 using Assignment = std::map<std::string, std::string>;
 using Targets = std::vector<Assignment>;
 
@@ -26,7 +26,7 @@ private:
     std::unique_ptr<ASTNode> buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget);
     std::unique_ptr<ASTNode> buildForallSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget);
 
-    // Helper estratti per la rifattorizzazione
+    //Utility
     std::vector<Symbol> generateFO2Args(int arity, const std::string& currentVar, const std::string& other);
     Targets allAssignments(const std::vector<std::string>& domain);
     Targets complementTargets(const Targets& allAssign, const Targets& targets);

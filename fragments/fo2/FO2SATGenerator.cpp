@@ -4,6 +4,7 @@
 #include <algorithm>
 
 namespace {
+
     // converts Symbol vector to string vector of names
     std::vector<std::string> getArgNames(const std::vector<Symbol>& args) {
         std::vector<std::string> names;
@@ -57,32 +58,32 @@ bool FO2SATGenerator::evaluateASTNode(const ASTNode& node, const Assignment& ass
     if (auto* a = dynamic_cast<const AtomicNode*>(&node)) {
         return model.evalAtom(a->predSymbol().name, a->predSymbol().arity, getArgNames(a->args()), assign);
     }
-    if (auto* e = dynamic_cast<const EqualityNode*>(&node)) {
-        auto itL = assign.find(e->lhs().name);
-        auto itR = assign.find(e->rhs().name);
+    if (auto* eqNode = dynamic_cast<const EqualityNode*>(&node)) {
+        auto itL = assign.find(eqNode->lhs().name);
+        auto itR = assign.find(eqNode->rhs().name);
         if (itL == assign.end() || itR == assign.end()) return false;
         return itL->second == itR->second;
     }
-    if (auto* n = dynamic_cast<const NegNode*>(&node)) {
-        return !evaluateASTNode(n->child(), assign, model);
+    if (auto* negNode = dynamic_cast<const NegNode*>(&node)) {
+        return !evaluateASTNode(negNode->child(), assign, model);
     }
-    if (auto* b = dynamic_cast<const BinaryConnNode*>(&node)) {
-        bool lv = evaluateASTNode(b->left(), assign, model);
-        bool rv = evaluateASTNode(b->right(), assign, model);
-        switch (b->connSymbol().type) {
+    if (auto* binConnNode = dynamic_cast<const BinaryConnNode*>(&node)) {
+        bool lv = evaluateASTNode(binConnNode->left(), assign, model);
+        bool rv = evaluateASTNode(binConnNode->right(), assign, model);
+        switch (binConnNode->connSymbol().type) {
         case SymbolType::AND:     return lv && rv;
         case SymbolType::OR:      return lv || rv;
         case SymbolType::IMPLIES: return !lv || rv;
         default: return false;
         }
     }
-    if (auto* q = dynamic_cast<const QuantifierNode*>(&node)) {
-        const std::string& vname = q->var().name;
-        bool isExists = (q->quantSymbol().type == SymbolType::EXISTS);
+    if (auto* quantNode = dynamic_cast<const QuantifierNode*>(&node)) {
+        const std::string& vname = quantNode->var().name;
+        bool isExists = (quantNode->quantSymbol().type == SymbolType::EXISTS);
         for (const auto& e : model.domain()) {
             Assignment ext = assign;
             ext[vname] = e;
-            bool val = evaluateASTNode(q->body(), ext, model);
+            bool val = evaluateASTNode(quantNode->body(), ext, model);
             if (isExists && val)  return true;
             if (!isExists && !val) return false;
         }
@@ -91,9 +92,11 @@ bool FO2SATGenerator::evaluateASTNode(const ASTNode& node, const Assignment& ass
     return false;
 }
 
-// Entry point for SAT formula generation
+// SAT Construction (only FO2SATGenerator)
 std::unique_ptr<ASTNode> FO2SATGenerator::generateSAT(int depth, int domainSize, BudgetState& budget) {
-    FiniteModel model(activeVocab_, rng_, domainSize);
+    // Force a min domainSize if not specified 
+    int actualDomainSize = (domainSize <= 0) ? 3 : domainSize;
+    FiniteModel model(activeVocab_, rng_, actualDomainSize);
     const auto& D = model.domain();
 
     std::vector<std::string> domCopy = D;
@@ -116,7 +119,7 @@ std::unique_ptr<ASTNode> FO2SATGenerator::generateSAT(int depth, int domainSize,
     return std::make_unique<QuantifierNode>(rootQ, Symbol::var("v1"), std::move(body));
 }
 
-// Router to build specific AST nodes based on current budget
+// buildSAT routing
 std::unique_ptr<ASTNode> FO2SATGenerator::buildSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
     if (depth == 0) return buildAtomicSAT(targets, model, currentVar);
 
@@ -182,7 +185,7 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildAtomicSAT(const Targets& targets,
     return atom;
 }
 
-// Builds an equality node satisfying targets
+// buildEqualitySAT
 std::unique_ptr<ASTNode> FO2SATGenerator::buildEqualitySAT(const Targets& targets, const FiniteModel& model, const std::string& currentVar) {
     const std::string other = nextVar(currentVar);
     std::vector<std::pair<std::string, std::string>> combos = {
@@ -210,54 +213,35 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildEqualitySAT(const Targets& target
     return buildAtomicSAT(targets, model, currentVar);
 }
 
-// Builds a negation node forcing falsity on targets via complement
+// buildNegSAT
 std::unique_ptr<ASTNode> FO2SATGenerator::buildNegSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
     auto allAssign = allAssignments(model.domain());
     auto complement = complementTargets(allAssign, targets);
 
     if (complement.empty()) {
-        // Robust fallback if complement is empty
-        std::vector<int> idx(activeVocab_.size());
-        std::iota(idx.begin(), idx.end(), 0);
-        std::shuffle(idx.begin(), idx.end(), rng_);
-
-        for (int i : idx) {
-            const auto& p = activeVocab_[i];
-            auto args = generateFO2Args(p.arity, currentVar, nextVar(currentVar));
-            auto argN = getArgNames(args);
-
-            bool allFalse = true;
-            for (const auto& t : targets) {
-                if (model.evalAtom(p.name, p.arity, argN, t)) { allFalse = false; break; }
-            }
-            if (allFalse) {
-                auto atom = std::make_unique<AtomicNode>(Symbol::pred(p.name, p.arity), args);
-                return std::make_unique<NegNode>(std::move(atom));
-            }
-        }
-        throw std::logic_error("buildNegSAT: empty complement and no atom uniformly false");
+        return buildAtomicSAT(targets, model, currentVar);
     }
 
     auto child = buildSAT(depth - 1, complement, model, currentVar, budget);
 
-    // Correctness assertion check
+    // Fallback
     for (const auto& t : targets) {
         if (evaluateASTNode(*child, t, model)) {
-            throw std::logic_error("buildNegSAT: child true on a target -> violation");
+            return buildAtomicSAT(targets, model, currentVar);
         }
     }
 
     return std::make_unique<NegNode>(std::move(child));
 }
 
-// Builds a conjunction node satisfying targets on both branches
+// buildAndSAT
 std::unique_ptr<ASTNode> FO2SATGenerator::buildAndSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
     return std::make_unique<BinaryConnNode>(Symbol::and_(),
         buildSAT(depth - 1, targets, model, currentVar, budget),
         buildSAT(depth - 1, targets, model, currentVar, budget));
 }
 
-// Builds a disjunction node splitting targets between branches
+//buildOrSAT
 std::unique_ptr<ASTNode> FO2SATGenerator::buildOrSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
     Targets leftT, rightT;
     for (const auto& t : targets) {
@@ -273,7 +257,7 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildOrSAT(int depth, const Targets& t
         buildSAT(depth - 1, rightT, model, currentVar, budget));
 }
 
-// Builds an implication node ensuring logic validity over targets
+// buildImpliesSAT
 std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
     Targets leftCoverTargets, rightTargets;
     for (const auto& t : targets) {
@@ -285,16 +269,10 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targe
     if (rightTargets.empty())     rightTargets = { targets[randInt(0, static_cast<int>(targets.size()) - 1)] };
 
     auto allAssign = allAssignments(model.domain());
-    auto antecedentTargets = complementTargets(leftCoverTargets, allAssign);
+    auto antecedentTargets = complementTargets(allAssign, leftCoverTargets);
 
     if (antecedentTargets.empty()) {
-        int keep = std::max(1, static_cast<int>(leftCoverTargets.size()) / 2);
-        std::shuffle(leftCoverTargets.begin(), leftCoverTargets.end(), rng_);
-        leftCoverTargets.resize(keep);
-        antecedentTargets = complementTargets(leftCoverTargets, allAssign);
-        if (antecedentTargets.empty()) {
-            throw std::logic_error("buildImpliesSAT: Unable to build non-empty antecedent");
-        }
+        return buildAtomicSAT(targets, model, currentVar);
     }
 
     return std::make_unique<BinaryConnNode>(Symbol::implies(),

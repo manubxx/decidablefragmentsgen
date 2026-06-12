@@ -8,13 +8,12 @@
 #include "vampire/VampireRunner.hpp"
 #include <iostream>
 
-
 template <typename Gen>
 static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, const VampireRunner* runner, int timeout)
 {
     int failures = 0;
     int generatedCount = 0;
-    const int MAX_ATTEMPTS = 50; //retry limit
+    const int MAX_ATTEMPTS = 50; // limite di tentativi per singola formula
 
     while (generatedCount < count) {
         int attempts = 0;
@@ -37,7 +36,8 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
                     continue;
                 }
 
-                if (cfg.mode == GenMode::SAT) {
+                
+                if (cfg.mode == GenMode::SAT || cfg.mode == GenMode::SATBUILD) {
                     if (res.status == "Satisfiable" || res.status == "CounterSatisfiable")
                         formulaAccepted = true;
                 }
@@ -49,7 +49,7 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
                     formulaAccepted = true; // FREE
                 }
             }
-            catch (const std::exception& e) {
+            catch (const std::exception&) {
                 continue;
             }
         }
@@ -67,7 +67,6 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
     return failures;
 }
 
-
 int main(int argc, char* argv[])
 {
     AppArgs args;
@@ -81,6 +80,7 @@ int main(int argc, char* argv[])
         std::cerr << "Error: " << e.what() << "\n";
         return 1;
     }
+    args.cfg.mode = GenMode::SATBUILD;
 
     VampireRunner vampireRunner(args.vampirePath);
 
@@ -92,9 +92,18 @@ int main(int argc, char* argv[])
     const VampireRunner* runnerPtr = args.verify ? &vampireRunner : nullptr;
     int failures = 0;
 
- 
     if (args.fragment == "fo2") {
+        // Allineamento di sicurezza se il parser fa un fallback silenzioso dell'enum
+        if (args.cfg.mode == GenMode::FREE && argc > 1) {
+            for (int i = 1; i < argc; ++i) {
+                if (std::string(argv[i]) == "satbuild") {
+                    args.cfg.mode = GenMode::SATBUILD;
+                }
+            }
+        }
+
         printHeader("FO2", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
+
         if (args.cfg.mode == GenMode::SATBUILD) {
             FO2SATGenerator gen(args.cfg.vocab, args.seed);
             failures = runGenerator(gen, args.cfg, args.count, args.verify, runnerPtr, args.vampireTimeout);
@@ -104,7 +113,6 @@ int main(int argc, char* argv[])
             failures = runGenerator(gen, args.cfg, args.count, args.verify, runnerPtr, args.vampireTimeout);
         }
     }
-
     else if (args.fragment == "fluted") {
         printHeader("Fluted", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
         FlutedGenerator gen(args.cfg.vocab, args.seed);

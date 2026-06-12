@@ -16,7 +16,7 @@ public:
 private:
     std::unique_ptr<ASTNode> buildSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget);
 
-    // Metodi di generazione dei nodi AST
+    // Target propagation methods of AST nodes 
     std::unique_ptr<ASTNode> buildAtomicSAT(const Targets& targets, const FiniteModel& model, const std::string& currentVar);
     std::unique_ptr<ASTNode> buildEqualitySAT(const Targets& targets, const FiniteModel& model, const std::string& currentVar);
     std::unique_ptr<ASTNode> buildNegSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget);

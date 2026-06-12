@@ -25,14 +25,15 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
                 break;
             case GenMode::SAT:
             case GenMode::SATBUILD:
-                formula = generateSAT(cfg.depth, cfg.domainSize, bs); //Polymorphism ensures that satbuild is called only by the fragments that implement it.
+                // Il polimorfismo garantisce che nei frammenti che implementano 
+                // satbuild venga invocata la logica corretta.
+                formula = generateSAT(cfg.depth, cfg.domainSize, bs);
                 break;
             case GenMode::UNSAT:
                 formula = generateUNSAT(cfg.depth, bs);
                 break;
             }
         }
-
         catch (const std::exception&) {
             continue;
         }
@@ -57,9 +58,10 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
     if (cfg.output == OutputFormat::TPTP) {
         std::string role;
         switch (cfg.mode) {
-        case GenMode::SAT:   role = "axiom";              break;
-        case GenMode::UNSAT: role = "negated_conjecture"; break;
-        case GenMode::FREE:  role = "axiom";              break;
+        case GenMode::SAT:
+        case GenMode::SATBUILD: role = "axiom";              break; // <-- CORRETTO: gestisce satbuild nell'output TPTP
+        case GenMode::UNSAT:    role = "negated_conjecture"; break;
+        case GenMode::FREE:     role = "axiom";              break;
         }
         return "fof(f," + role + ",\n    " + formula->toTPTP() + "\n).";
     }
@@ -72,10 +74,9 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     if (budget.not_left == 0)
         throw std::logic_error("generateUNSAT: budget NOT exhausted");
 
-   //budget snapshot
+    // budget snapshot
     BudgetState originalBudget = budget;
 
-    
     budget.consume(SymbolType::AND);
     budget.consume(SymbolType::NEG);
 
@@ -94,11 +95,10 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     auto phi = buildComponentUNSAT(childDepth, phiBudget);
     auto copy = phi->clone();
 
-   
     auto applyDoubleDelta = [](int& realBudget, int B, int finalPhiBudget) {
-        if (B <= 0) return; // unconstrained (-1) o forbidden (0)
+        if (B <= 0) return;
         int allocated = B / 2;
-        int remainder = B - allocated * 2;        
+        int remainder = B - allocated * 2;
         int consumedByPhi = allocated - finalPhiBudget;
         int totalConsumed = consumedByPhi * 2;
         realBudget = std::max(0, B - totalConsumed - remainder);
@@ -119,7 +119,6 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     );
 }
 
-
 // candidateTypes
 std::vector<SymbolType> FormulaBuilder::candidateTypes(int depth, const BudgetState& bs) const {
     if (depth == 0) return {};
@@ -137,9 +136,8 @@ std::vector<SymbolType> FormulaBuilder::candidateTypes(int depth, const BudgetSt
     return candidates;
 }
 
-// pickType 
-SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget,
-    const std::vector<SymbolType>& candidates) {
+// pickType
+SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget, const std::vector<SymbolType>& candidates) {
     if (candidates.empty()) return SymbolType::PREDICATE;
 
     std::vector<SymbolType> forced;
@@ -158,7 +156,6 @@ SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget,
         if (left > 0) forced.push_back(t);
     }
 
-    //auto& pick = (budget.remaining() > depth && !forced.empty()) ? forced : candidates;
     auto& pick = (!forced.empty()) ? forced : candidates;
 
     SymbolType chosen = pick[randInt(0, static_cast<int>(pick.size()) - 1)];
@@ -166,7 +163,7 @@ SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget,
     return chosen;
 }
 
-// pickType — wrapper retrocompatibile per build() e chi non ha filtri aggiuntivi.
+// pickType — wrapper retrocompatibile
 SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget) {
     auto candidates = candidateTypes(depth, budget);
     return pickType(depth, budget, candidates);

@@ -5,18 +5,24 @@
 
 // printHeader 
 void printHeader(
-    const std::string&           fragment,
-    const GenConfig&             cfg,
+    const std::string& fragment,
+    const GenConfig& cfg,
     int                          count,
     unsigned                     seed,
     const std::vector<PredInfo>& vocab,
     bool                         verify,
-    const std::string&           vampirePath,
-    int                          vampireTimeout)
-{
+    const std::string& vampirePath,
+    int                          vampireTimeout) {
+
+    // CORREZIONE: Gestione della stringa SATBUILD
+    std::string modeStr = "FREE";
+    if (cfg.mode == GenMode::SAT) modeStr = "SAT";
+    else if (cfg.mode == GenMode::UNSAT) modeStr = "UNSAT";
+    else if (cfg.mode == GenMode::SATBUILD) modeStr = "SATBUILD";
+
     std::cout << "--- GENERATION CONFIGURATION ---\n"
         << "Fragment: " << fragment << "\n"
-        << "Mode: " << (cfg.mode == GenMode::SAT ? "SAT" : (cfg.mode == GenMode::UNSAT ? "UNSAT" : "FREE")) << "\n"
+        << "Mode: " << modeStr << "\n" // <-- Stampa la stringa corretta
         << "Depth: " << cfg.depth << " | Count: " << count << " | Seed: " << seed << "\n"
         << "Domain Size: " << cfg.domainSize << "\n"
         << "Vocabulary Size: " << vocab.size() << " predicates.\n";
@@ -27,17 +33,16 @@ void printHeader(
     std::cout << "--------------------------------\n\n";
 }
 
-
 // printFormula
 void printFormula(
     int                  idx,
-    const GenConfig&     cfg,
-    const std::string&   formulaStr,
+    const GenConfig& cfg,
+    const std::string& formulaStr,
     bool                 verify,
     const VampireRunner* runner,
-    int                  vampireTimeout)
-{
-    //TPTP output
+    int                  vampireTimeout) {
+
+    // TPTP output
     if (cfg.output == OutputFormat::TPTP) {
         std::cout << "% Formula " << idx << "\n" << formulaStr << "\n";
 
@@ -47,8 +52,13 @@ void printFormula(
         }
     }
     else {
-    //Standard output
-        std::string modeT = (cfg.mode == GenMode::SAT) ? "[SAT]" : ((cfg.mode == GenMode::UNSAT) ? "[UNSAT]" : "[FREE]");
+        // Standard output
+     
+        std::string modeT = "[FREE]";
+        if (cfg.mode == GenMode::SAT) modeT = "[SAT]";
+        else if (cfg.mode == GenMode::UNSAT) modeT = "[UNSAT]";
+        else if (cfg.mode == GenMode::SATBUILD) modeT = "[SATBUILD]";
+
         std::cout << modeT << " (" << idx << "): " << formulaStr << "\n";
     }
     std::cout << "\n";

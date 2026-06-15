@@ -1,84 +1,94 @@
 #pragma once
 #include "../FragmentTypes.hpp"
 #include <string>
+#include <unordered_map>
 #include <map>
 #include <vector>
 #include <random>
 #include <stdexcept>
-
-// For FO2 (arity <= 2): Mortimer (1975) guarantees the finite model property.
-// Construction Complexity: O(∑_P |D|^arity(P))
-// evalAtom Complexity:     O(log(|D|^k))
+#include <iostream>
 
 class FiniteModel {
 public:
-
-    // Constructor
-    FiniteModel(const std::vector<PredInfo>& vocab, std::mt19937& rng, int domainSize = 0)
+    FiniteModel(const std::vector<PredInfo>& vocab, std::mt19937& rng, int totalExponent)
     {
-        if (domainSize <= 0)
-            throw std::invalid_argument("FiniteModel: domainSize not specified. Use --domain-size n to choose the domain size.");
+        // overflow check, 16 is maximum that can be valued for a 32-bit integer
+        if (totalExponent > 15) totalExponent = 15;
+        int actualDomainSize = 1 << totalExponent;
+        if (actualDomainSize < 2) actualDomainSize = 2;
 
-        if (domainSize < 2)
-            throw std::invalid_argument("FiniteModel: domainSize must be >= 2");
-
-        // Builds the domain D = {d0, d1, ..., d_{n-1}}
-        domain_.reserve(domainSize);
-        for (int i = 0; i < domainSize; ++i)
+        domain_.reserve(actualDomainSize);
+        for (int i = 0; i < actualDomainSize; ++i) {
             domain_.push_back("d" + std::to_string(i));
+        }
 
-        // Interprets each predicate randomly over D^arity(P)
         std::bernoulli_distribution coin(0.5);
 
+        // bit vectors and matrix
         for (const auto& p : vocab) {
-            if (p.arity < 1)
-                throw std::invalid_argument("FiniteModel: predicate '" + p.name +"' has arity " + std::to_string(p.arity) + " < 1");
-
-            // Generates all tuples of D^k via Cartesian product
-            std::vector<std::vector<std::string>> tuples = { {} };
-            for (int dim = 0; dim < p.arity; ++dim) {
-                std::vector<std::vector<std::string>> expanded;
-                expanded.reserve(tuples.size() * domain_.size());
-                for (const auto& t : tuples)
-                    for (const auto& e : domain_) {
-                        auto ext = t;
-                        ext.push_back(e);
-                        expanded.push_back(std::move(ext));
-                    }
-                tuples = std::move(expanded);
+            if (p.arity == 1) {
+                auto& bitTable = unaryInterp_[p.name];
+                bitTable.resize(actualDomainSize);
+                for (int i = 0; i < actualDomainSize; ++i) {
+                    bitTable[i] = coin(rng);
+                }
             }
-
-            // Assigns a random boolean value to each tuple
-            auto& table = interp_[p.name];
-            for (auto& tuple : tuples)
-                table[tuple] = coin(rng);
+            else if (p.arity == 2) {
+                long long totalCells = static_cast<long long>(actualDomainSize) * actualDomainSize;
+                auto& bitTable = binaryInterp_[p.name];
+                bitTable.resize(totalCells);
+                for (long long i = 0; i < totalCells; ++i) {
+                    bitTable[i] = coin(rng);
+                }
+            }
+            else {
+                throw std::invalid_argument("FiniteModel: This model supports only FO2 predicates");
+            }
         }
     }
 
-    // Public Interface
-    [[nodiscard]] const std::vector<std::string>& domain() const
-    {
+    [[nodiscard]] const std::vector<std::string>& domain() const {
         return domain_;
+    }
+
+    // Parsing on bit matrix
+    [[nodiscard]] static inline int fastParseIndex(const std::string& s) {
+        int res = 0;
+        for (size_t i = 1; i < s.size(); ++i) {
+            res = res * 10 + (s[i] - '0');
+        }
+        return res;
+    }
+
+    // O(1) access on matrix 
+    [[nodiscard]] bool evalAtomDirect(const std::string& pred, const std::vector<std::string>& tuple) const
+    {
+        if (tuple.size() == 1) {
+            int idx = fastParseIndex(tuple[0]);
+            return unaryInterp_.at(pred)[idx];
+        }
+        else if (tuple.size() == 2) {
+            int idx1 = fastParseIndex(tuple[0]);
+            int idx2 = fastParseIndex(tuple[1]);
+            long long finalIndex = static_cast<long long>(idx1) * domain_.size() + idx2;
+            return binaryInterp_.at(pred)[finalIndex];
+        }
+        return false;
     }
 
     [[nodiscard]] bool evalAtom(const std::string& pred, int arity, const std::vector<std::string>& atomVars, const std::map<std::string, std::string>& varAssign) const
     {
-        // Resolves variables into domain elements
         std::vector<std::string> tuple;
         tuple.reserve(arity);
-        for (int i = 0; i < arity; ++i)
+        for (int i = 0; i < arity; ++i) {
             tuple.push_back(varAssign.at(atomVars[i]));
-
-        return interp_.at(pred).at(tuple);
-    }
-
-    // Evaluates an atom using a tuple of already resolved elements
-    [[nodiscard]] bool evalAtomDirect(const std::string& pred, const std::vector<std::string>& tuple) const
-    {
-        return interp_.at(pred).at(tuple);
+        }
+        return evalAtomDirect(pred, tuple);
     }
 
 private:
     std::vector<std::string> domain_;
-    std::map<std::string, std::map<std::vector<std::string>, bool>> interp_;
+
+    std::unordered_map<std::string, std::vector<bool>> unaryInterp_;
+    std::unordered_map<std::string, std::vector<bool>> binaryInterp_;
 };

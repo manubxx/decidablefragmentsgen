@@ -8,9 +8,12 @@ OPZIONI BASE:
                              guarded = Guarded Fragment
                              unaryneg = Unary Negation Fragment
   --mode <modo>            Modalita' di generazione (default: free)
-                             free   = formule casuali
-                             sat    = formule soddisfacibili
-                             unsat  = formule insoddisfacibili
+                             free     = formule casuali
+                             sat      = formule soddisfacibili
+                             unsat    = formule insoddisfacibili
+                             satbuild = costruzione di formule soddisfacibili (only FO2)
+
+  --domain-size            Dimensione del modello finito, 2^n			      
   --depth <n>              Profondita' max albero sintattico (default: 3)
   --count <n>              Numero di formule da generare (default: 5)
   --seed <n>               Seme per riproducibilita' (default: casuale)

@@ -30,7 +30,7 @@ Targets FO2SATGenerator::complementTargets(int domainSize, const Targets& target
     Variable active = currentVar;
     Variable other = 1 - currentVar;
 
-    // Controlliamo se l'altra variabile è uniforme (costante) per tutti i target
+   
     int referenceValue = targets[0][other];
     bool isSingleRowC = true;
     for (const auto& a : targets) {
@@ -41,7 +41,7 @@ Targets FO2SATGenerator::complementTargets(int domainSize, const Targets& target
     }
 
     if (!isSingleRowC) {
-        // Caso 2D: Entrambe le variabili sono attive o correlate
+       
         size_t totalCells = static_cast<size_t>(domainSize) * domainSize;
         std::vector<bool> visited(totalCells, false);
 
@@ -58,7 +58,7 @@ Targets FO2SATGenerator::complementTargets(int domainSize, const Targets& target
         }
     }
     else {
-        // Caso 1D: Complementiamo solo la variabile attiva, mantenendo l'altra costante
+       
         std::vector<bool> visited(domainSize, false);
         for (const auto& a : targets) {
             visited[a[active]] = true;

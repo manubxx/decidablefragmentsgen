@@ -2,78 +2,73 @@
 #include <stdexcept>
 #include <numeric>
 #include <algorithm>
+#include <array>
 
-namespace {
-   
-    std::vector<std::string> getArgNames(const std::vector<Symbol>& args) {
-        std::vector<std::string> names;
-        names.reserve(args.size());
-        for (const auto& s : args) names.push_back(s.name);
-        return names;
-    }
-}
 
-std::vector<Symbol> FO2SATGenerator::generateFO2Args(int arity, const std::string& currentVar, const std::string& other) {
+std::vector<Symbol> FO2SATGenerator::generateFO2Args(int arity, Variable currentVar, Variable other) {
     std::vector<Symbol> args;
     args.reserve(arity);
     if (arity == 1) {
-        std::string chosenVar = (randInt(0, 1) == 0) ? currentVar : other;
-        args.push_back(Symbol::var(chosenVar));
+        Variable chosenVar = (randInt(0, 1) == 0) ? currentVar : other;
+        args.push_back(Symbol::var(nameFromVar(chosenVar)));
     }
     else {
-        std::string arg1 = (randInt(0, 1) == 0) ? currentVar : other;
-        std::string arg2 = (randInt(0, 1) == 0) ? currentVar : other;
-        args.push_back(Symbol::var(arg1));
-        args.push_back(Symbol::var(arg2));
+        Variable arg1 = (randInt(0, 1) == 0) ? currentVar : other;
+        Variable arg2 = (randInt(0, 1) == 0) ? currentVar : other;
+        args.push_back(Symbol::var(nameFromVar(arg1)));
+        args.push_back(Symbol::var(nameFromVar(arg2)));
     }
     return args;
 }
 
 
-Targets FO2SATGenerator::complementTargets(const std::vector<std::string>& domain, const Targets& targets) {
-    std::set<Assignment> targetSet(targets.begin(), targets.end());
+
+Targets FO2SATGenerator::complementTargets(int domainSize, const Targets& targets, Variable currentVar) {
     Targets complement;
+    if (targets.empty()) return complement;
 
-    bool hasV1 = false;
-    bool hasV2 = false;
-    if (!targets.empty()) {
-        hasV1 = targets[0].count("v1") > 0;
-        hasV2 = targets[0].count("v2") > 0;
-    }
-    else {
-        hasV1 = true; hasV2 = true;
-    }
+    Variable active = currentVar;
+    Variable other = 1 - currentVar;
 
-    if (hasV1 && hasV2) {
-     
-        unsigned long long expectedSize = static_cast<unsigned long long>(domain.size()) * domain.size() - targets.size();
-        if (expectedSize < 5000000ULL) {
-            complement.reserve(static_cast<size_t>(expectedSize));
+    // Controlliamo se l'altra variabile è uniforme (costante) per tutti i target
+    int referenceValue = targets[0][other];
+    bool isSingleRowC = true;
+    for (const auto& a : targets) {
+        if (a[other] != referenceValue) {
+           isSingleRowC = false;
+            break;
         }
-        for (const auto& e1 : domain) {
-            for (const auto& e2 : domain) {
-                Assignment a = { {"v1", e1}, {"v2", e2} };
-                if (targetSet.find(a) == targetSet.end()) {
-                    complement.push_back(std::move(a));
+    }
+
+    if (!isSingleRowC) {
+        // Caso 2D: Entrambe le variabili sono attive o correlate
+        size_t totalCells = static_cast<size_t>(domainSize) * domainSize;
+        std::vector<bool> visited(totalCells, false);
+
+        for (const auto& a : targets) {
+            visited[static_cast<size_t>(a[0]) * domainSize + a[1]] = true;
+        }
+
+        for (int e1 = 0; e1 < domainSize; ++e1) {
+            for (int e2 = 0; e2 < domainSize; ++e2) {
+                if (!visited[static_cast<size_t>(e1) * domainSize + e2]) {
+                    complement.push_back({ e1, e2 });
                 }
             }
         }
     }
-    else if (hasV1) {
-        complement.reserve(domain.size() - targets.size());
-        for (const auto& e1 : domain) {
-            Assignment a = { {"v1", e1} };
-            if (targetSet.find(a) == targetSet.end()) {
-                complement.push_back(std::move(a));
-            }
+    else {
+        // Caso 1D: Complementiamo solo la variabile attiva, mantenendo l'altra costante
+        std::vector<bool> visited(domainSize, false);
+        for (const auto& a : targets) {
+            visited[a[active]] = true;
         }
-    }
-    else if (hasV2) {
-        complement.reserve(domain.size() - targets.size());
-        for (const auto& e2 : domain) {
-            Assignment a = { {"v2", e2} };
-            if (targetSet.find(a) == targetSet.end()) {
-                complement.push_back(std::move(a));
+        for (int e = 0; e < domainSize; ++e) {
+            if (!visited[e]) {
+                Assignment c;
+                c[active] = e;
+                c[other] = referenceValue;
+                complement.push_back(c);
             }
         }
     }
@@ -81,26 +76,27 @@ Targets FO2SATGenerator::complementTargets(const std::vector<std::string>& domai
 }
 
 bool FO2SATGenerator::evaluateASTNode(const ASTNode& node, const Assignment& assign, const FiniteModel& model) {
-
-    //evaluate atomic
+    // atomic evaluation
     if (auto* a = dynamic_cast<const AtomicNode*>(&node)) {
-        return model.evalAtom(a->predSymbol().name, a->predSymbol().arity, getArgNames(a->args()), assign);
+        const auto& args = a->args();
+        Variable arg1 = varFromName(args[0].name);
+        Variable arg2 = (args.size() > 1) ? varFromName(args[1].name) : 0;
+        return model.evalAtom(a->predSymbol().name, a->predSymbol().arity, assign, arg1, arg2);
     }
 
-    //evaluate equality
+    // equality evaluation
     if (auto* eqNode = dynamic_cast<const EqualityNode*>(&node)) {
-        auto itL = assign.find(eqNode->lhs().name);
-        auto itR = assign.find(eqNode->rhs().name);
-        if (itL == assign.end() || itR == assign.end()) return false;
-        return itL->second == itR->second;
+        Variable v1 = varFromName(eqNode->lhs().name);
+        Variable v2 = varFromName(eqNode->rhs().name);
+        return assign[v1] == assign[v2];
     }
 
-    //evaluate negation
+    // negation evaluation
     if (auto* negNode = dynamic_cast<const NegNode*>(&node)) {
         return !evaluateASTNode(negNode->child(), assign, model);
     }
 
-    //evaluate binary connective
+    // binary connectives evaluation
     if (auto* binConnNode = dynamic_cast<const BinaryConnNode*>(&node)) {
         bool lv = evaluateASTNode(binConnNode->left(), assign, model);
         bool rv = evaluateASTNode(binConnNode->right(), assign, model);
@@ -112,15 +108,15 @@ bool FO2SATGenerator::evaluateASTNode(const ASTNode& node, const Assignment& ass
         }
     }
 
-    //evaluate quantifier
+    // quantifiers evaluation
     if (auto* quantNode = dynamic_cast<const QuantifierNode*>(&node)) {
-        const std::string& vname = quantNode->var().name;
+        Variable v = varFromName(quantNode->var().name);
         bool isExists = (quantNode->quantSymbol().type == SymbolType::EXISTS);
 
-    
         Assignment ext = assign;
-        for (const auto& e : model.domain()) {
-            ext[vname] = e;
+        int dSize = model.domainSize();
+        for (int e = 0; e < dSize; ++e) {
+            ext[v] = e;
             bool val = evaluateASTNode(quantNode->body(), ext, model);
             if (isExists && val)  return true;
             if (!isExists && !val) return false;
@@ -133,30 +129,38 @@ bool FO2SATGenerator::evaluateASTNode(const ASTNode& node, const Assignment& ass
 std::unique_ptr<ASTNode> FO2SATGenerator::generateSAT(int depth, int domainSize, BudgetState& budget) {
     int actualDomainSize = (domainSize <= 0) ? 3 : domainSize;
     FiniteModel model(activeVocab_, rng_, actualDomainSize);
-    const auto& D = model.domain();
+    int dSize = model.domainSize();
 
-    std::vector<std::string> domCopy = D;
+    std::vector<int> domCopy(dSize);
+    std::iota(domCopy.begin(), domCopy.end(), 0);
     std::shuffle(domCopy.begin(), domCopy.end(), rng_);
-    int ns = randInt(1, static_cast<int>(domCopy.size()));
+    int ns = randInt(1, dSize);
     domCopy.resize(ns);
 
     bool rootExists = (randInt(0, 1) == 0);
     Targets bodyTargets;
 
-    const auto& targetDomain = rootExists ? domCopy : D;
+  
+    std::vector<int> fullDom;
+    if (!rootExists) { //FORALL
+        fullDom.resize(dSize);
+        std::iota(fullDom.begin(), fullDom.end(), 0);
+    }
+    const auto& targetDomain = rootExists ? domCopy : fullDom;
+
     bodyTargets.reserve(targetDomain.size());
-    for (const auto& e : targetDomain) {
-        bodyTargets.push_back({ {"v1", e} });
+    for (int e : targetDomain) {
+        bodyTargets.push_back({ e, 0 }); 
     }
 
     int bodyDepth = (depth > 0) ? depth - 1 : 0;
-    auto body = buildSAT(bodyDepth, bodyTargets, model, "v1", budget);
+    auto body = buildSAT(bodyDepth, bodyTargets, model, 0, budget); 
 
     auto rootQ = rootExists ? Symbol::exists() : Symbol::forall();
     return std::make_unique<QuantifierNode>(rootQ, Symbol::var("v1"), std::move(body));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
     if (depth == 0) return buildAtomicSAT(targets, model, currentVar);
 
     auto candidates = candidateTypes(depth, budget);
@@ -174,21 +178,23 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildSAT(int depth, const Targets& tar
     }
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildAtomicSAT(const Targets& targets, const FiniteModel& model, const std::string& currentVar) {
-    const std::string other = nextVar(currentVar);
+std::unique_ptr<ASTNode> FO2SATGenerator::buildAtomicSAT(const Targets& targets, const FiniteModel& model, Variable currentVar) {
+    Variable other = 1 - currentVar;
 
     std::vector<int> idx(activeVocab_.size());
     std::iota(idx.begin(), idx.end(), 0);
     std::shuffle(idx.begin(), idx.end(), rng_);
 
+    
     for (int i : idx) {
         const auto& p = activeVocab_[i];
         auto args = generateFO2Args(p.arity, currentVar, other);
-        auto argN = getArgNames(args);
+        Variable arg1 = varFromName(args[0].name);
+        Variable arg2 = (p.arity > 1) ? varFromName(args[1].name) : 0;
 
         bool allTrue = true, allFalse = true;
         for (const auto& assign : targets) {
-            bool val = model.evalAtom(p.name, p.arity, argN, assign);
+            bool val = model.evalAtom(p.name, p.arity, assign, arg1, arg2);
             if (!val) allTrue = false;
             if (val)  allFalse = false;
         }
@@ -198,46 +204,27 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildAtomicSAT(const Targets& targets,
         if (allFalse) return std::make_unique<NegNode>(std::move(atom));
     }
 
-    int bestIdx = idx[0], bestCount = -1;
-    for (int i : idx) {
-        const auto& cand = activeVocab_[i];
-        auto candNames = getArgNames(generateFO2Args(cand.arity, currentVar, other));
-        int cnt = 0;
-        for (const auto& assign : targets) {
-            if (model.evalAtom(cand.name, cand.arity, candNames, assign)) ++cnt;
-        }
-        if (cnt > bestCount) { bestCount = cnt; bestIdx = i; }
-    }
-
-    const auto& bp = activeVocab_[bestIdx];
-    auto ba = generateFO2Args(bp.arity, currentVar, other);
-    auto atom = std::make_unique<AtomicNode>(Symbol::pred(bp.name, bp.arity), ba);
-    if (bestCount == 0) {
-        return std::make_unique<NegNode>(std::move(atom));
-    }
-    return atom;
+   // fallback: return a tautology
+    return std::make_unique<EqualityNode>(Symbol::var(nameFromVar(currentVar)), Symbol::var(nameFromVar(currentVar))
+    );
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildEqualitySAT(const Targets& targets, const FiniteModel& model, const std::string& currentVar) {
-    const std::string other = nextVar(currentVar);
-    std::vector<std::pair<std::string, std::string>> combos = {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildEqualitySAT(const Targets& targets, const FiniteModel& model, Variable currentVar) {
+    Variable other = 1 - currentVar;
+    std::vector<std::pair<Variable, Variable>> combos = {
         {currentVar, currentVar}, {currentVar, other}, {other, currentVar}, {other, other}
     };
     std::shuffle(combos.begin(), combos.end(), rng_);
 
-    for (const auto& [lhsName, rhsName] : combos) {
+    for (const auto& [lhs, rhs] : combos) {
         bool allTrue = true, allFalse = true;
         for (const auto& assign : targets) {
-            auto itL = assign.find(lhsName);
-            auto itR = assign.find(rhsName);
-            if (itL == assign.end() || itR == assign.end()) { allTrue = false; allFalse = false; break; }
-
-            bool val = (itL->second == itR->second);
+            bool val = (assign[lhs] == assign[rhs]);
             if (!val) allTrue = false;
             if (val)  allFalse = false;
         }
 
-        auto eq = std::make_unique<EqualityNode>(Symbol::var(lhsName), Symbol::var(rhsName));
+        auto eq = std::make_unique<EqualityNode>(Symbol::var(nameFromVar(lhs)), Symbol::var(nameFromVar(rhs)));
         if (allTrue)  return eq;
         if (allFalse) return std::make_unique<NegNode>(std::move(eq));
     }
@@ -245,8 +232,8 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildEqualitySAT(const Targets& target
     return buildAtomicSAT(targets, model, currentVar);
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildNegSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
-    auto complement = complementTargets(model.domain(), targets);
+std::unique_ptr<ASTNode> FO2SATGenerator::buildNegSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+    auto complement = complementTargets(model.domainSize(), targets, currentVar);
 
     if (complement.empty()) {
         return buildAtomicSAT(targets, model, currentVar);
@@ -263,13 +250,13 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildNegSAT(int depth, const Targets& 
     return std::make_unique<NegNode>(std::move(child));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildAndSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildAndSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
     return std::make_unique<BinaryConnNode>(Symbol::and_(),
         buildSAT(depth - 1, targets, model, currentVar, budget),
         buildSAT(depth - 1, targets, model, currentVar, budget));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildOrSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildOrSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
     Targets leftT, rightT;
     for (const auto& t : targets) {
         int coin = randInt(0, 2);
@@ -284,7 +271,7 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildOrSAT(int depth, const Targets& t
         buildSAT(depth - 1, rightT, model, currentVar, budget));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
     Targets leftCoverTargets, rightTargets;
     for (const auto& t : targets) {
         int coin = randInt(0, 2);
@@ -294,7 +281,7 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targe
     if (leftCoverTargets.empty()) leftCoverTargets = { targets[randInt(0, static_cast<int>(targets.size()) - 1)] };
     if (rightTargets.empty())     rightTargets = { targets[randInt(0, static_cast<int>(targets.size()) - 1)] };
 
-    auto antecedentTargets = complementTargets(model.domain(), leftCoverTargets);
+    auto antecedentTargets = complementTargets(model.domainSize(), leftCoverTargets, currentVar);
 
     if (antecedentTargets.empty()) {
         return buildAtomicSAT(targets, model, currentVar);
@@ -305,36 +292,36 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targe
         buildSAT(depth - 1, rightTargets, model, currentVar, budget));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
-    const std::string boundVar = nextVar(currentVar);
-    const auto& D = model.domain();
+std::unique_ptr<ASTNode> FO2SATGenerator::buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+    Variable boundVar = 1 - currentVar;
+    int dSize = model.domainSize();
 
     Targets bodyTargets;
     bodyTargets.reserve(targets.size());
     for (const auto& t : targets) {
         Assignment ex = t;
-        ex[boundVar] = D[randInt(0, static_cast<int>(D.size()) - 1)];
-        bodyTargets.push_back(std::move(ex));
+        ex[boundVar] = randInt(0, dSize - 1);
+        bodyTargets.push_back(ex);
     }
 
-    return std::make_unique<QuantifierNode>(Symbol::exists(), Symbol::var(boundVar),
+    return std::make_unique<QuantifierNode>(Symbol::exists(), Symbol::var(nameFromVar(boundVar)),
         buildSAT(depth - 1, bodyTargets, model, boundVar, budget));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildForallSAT(int depth, const Targets& targets, const FiniteModel& model, const std::string& currentVar, BudgetState& budget) {
-    const std::string boundVar = nextVar(currentVar);
-    const auto& D = model.domain();
+std::unique_ptr<ASTNode> FO2SATGenerator::buildForallSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+    Variable boundVar = 1 - currentVar;
+    int dSize = model.domainSize();
 
     Targets bodyTargets;
-    bodyTargets.reserve(targets.size() * D.size());
+    bodyTargets.reserve(targets.size() * dSize);
     for (const auto& t : targets) {
-        for (const auto& e : D) {
+        for (int e = 0; e < dSize; ++e) {
             Assignment ex = t;
             ex[boundVar] = e;
-            bodyTargets.push_back(std::move(ex));
+            bodyTargets.push_back(ex);
         }
     }
 
-    return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var(boundVar),
+    return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var(nameFromVar(boundVar)),
         buildSAT(depth - 1, bodyTargets, model, boundVar, budget));
 }

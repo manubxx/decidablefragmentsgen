@@ -14,6 +14,8 @@ public:
     [[nodiscard]] virtual std::string toTPTP() const = 0;
     [[nodiscard]] virtual std::unique_ptr<ASTNode> clone() const = 0;
     [[nodiscard]] virtual std::unique_ptr<ASTNode> toNNF(bool negated = false) const = 0;
+protected:
+    
 };
 
 // AtomicNode 

@@ -5,7 +5,25 @@
 #include <string>
 #include <vector>
 
-// Abstract Syntax Tree
+// Forward declarations Visitor pattern
+class AtomicNode;
+class EqualityNode;
+class NegNode;
+class BinaryConnNode;
+class QuantifierNode;
+
+class ASTVisitor {
+public:
+    virtual ~ASTVisitor() = default;
+
+    virtual void visit(const AtomicNode& node) = 0;
+    virtual void visit(const EqualityNode& node) = 0;
+    virtual void visit(const NegNode& node) = 0;
+    virtual void visit(const BinaryConnNode& node) = 0;
+    virtual void visit(const QuantifierNode& node) = 0;
+};
+
+// Abstract Syntax Tree 
 class ASTNode {
 public:
     virtual ~ASTNode() = default;
@@ -14,8 +32,11 @@ public:
     [[nodiscard]] virtual std::string toTPTP() const = 0;
     [[nodiscard]] virtual std::unique_ptr<ASTNode> clone() const = 0;
     [[nodiscard]] virtual std::unique_ptr<ASTNode> toNNF(bool negated = false) const = 0;
-protected:
+
     
+    virtual void accept(ASTVisitor& visitor) const = 0;
+protected:
+
 };
 
 // AtomicNode 
@@ -30,6 +51,8 @@ public:
     [[nodiscard]] std::string toTPTP() const override;
     [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
     [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
+
+    void accept(ASTVisitor& visitor) const override;
 
 private:
     Symbol pred_;
@@ -50,14 +73,15 @@ public:
     [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
     [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
 
+    void accept(ASTVisitor& visitor) const override;
+
 private:
     Symbol lhs_;
     Symbol rhs_;
     static std::string tptpVar(const std::string& v);
 };
 
-
-//  NegNode
+// NegNode
 class NegNode final : public ASTNode {
 public:
     explicit NegNode(std::unique_ptr<ASTNode> child);
@@ -69,11 +93,13 @@ public:
     [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
     [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
 
+    void accept(ASTVisitor& visitor) const override;
+
 private:
     std::unique_ptr<ASTNode> child_;
 };
 
-//  BinaryConnNode 
+// BinaryConnNode 
 class BinaryConnNode final : public ASTNode {
 public:
     BinaryConnNode(Symbol connSymbol, std::unique_ptr<ASTNode> left, std::unique_ptr<ASTNode> right);
@@ -86,6 +112,8 @@ public:
     [[nodiscard]] std::string toTPTP() const override;
     [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
     [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
+
+    void accept(ASTVisitor& visitor) const override;
 
 private:
     Symbol conn_;
@@ -106,6 +134,8 @@ public:
     [[nodiscard]] std::string toTPTP() const override;
     [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
     [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
+
+    void accept(ASTVisitor& visitor) const override;
 
 private:
     Symbol quant_;

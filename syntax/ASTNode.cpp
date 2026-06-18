@@ -55,6 +55,9 @@ std::string AtomicNode::tptpVar(const std::string& v) {
     return r;
 }
 
+void AtomicNode::accept(ASTVisitor& visitor) const {
+    visitor.visit(*this);
+}
 
 
 // EqualityNode Implementation
@@ -93,6 +96,10 @@ std::string EqualityNode::tptpVar(const std::string& v) {
     return r;
 }
 
+void EqualityNode::accept(ASTVisitor& visitor) const {
+    visitor.visit(*this);
+}
+
 
 // NegNode Implementation
 // ==========================================
@@ -115,6 +122,10 @@ std::unique_ptr<ASTNode> NegNode::clone() const {
 
 std::unique_ptr<ASTNode> NegNode::toNNF(bool negated) const {
     return child_->toNNF(!negated);
+}
+
+void NegNode::accept(ASTVisitor& visitor) const {
+    visitor.visit(*this);
 }
 
 
@@ -165,6 +176,9 @@ std::unique_ptr<ASTNode> BinaryConnNode::toNNF(bool negated) const {
         newConn, left_->toNNF(negated), right_->toNNF(negated));
 }
 
+void BinaryConnNode::accept(ASTVisitor& visitor) const {
+    visitor.visit(*this);
+}
 
 // QuantifierNode Implementation
 // ==========================================
@@ -204,4 +218,8 @@ std::string QuantifierNode::tptpVar(const std::string& v) {
     std::string r = v;
     r[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(r[0])));
     return r;
+}
+
+void QuantifierNode::accept(ASTVisitor& visitor) const {
+    visitor.visit(*this);
 }

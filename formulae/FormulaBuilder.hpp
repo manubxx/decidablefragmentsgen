@@ -32,6 +32,8 @@ protected:
      // -1  -> unconstrained/free: canUse() = true,
      // 0   -> forbidden/exhausted: canUse() = false
      // >0  -> constrained/limited: canUse() = true,  consume() decrements value
+
+    static constexpr int DEFAULT_MARGIN = 20;
      
     struct BudgetState {
         int and_left;
@@ -53,7 +55,7 @@ protected:
             }
             // else
             int lo = (r.min >= 0) ? r.min : 0;
-            int hi = (r.max >= 0) ? r.max : lo + 20;
+            int hi = (r.max >= 0) ? r.max : (lo + DEFAULT_MARGIN);
             std::uniform_int_distribution<int> dist(lo, hi);
             return dist(rng);
         }

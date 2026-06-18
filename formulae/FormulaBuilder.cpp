@@ -25,8 +25,7 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
                 break;
             case GenMode::SAT:
             case GenMode::SATBUILD:
-                // Il polimorfismo garantisce che nei frammenti che implementano 
-                // satbuild venga invocata la logica corretta.
+                // polymorphism makes sure that fragments implement their satbuild
                 formula = generateSAT(cfg.depth, cfg.domainSize, bs);
                 break;
             case GenMode::UNSAT:
@@ -59,7 +58,7 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
         std::string role;
         switch (cfg.mode) {
         case GenMode::SAT:
-        case GenMode::SATBUILD: role = "axiom";              break; // <-- CORRETTO: gestisce satbuild nell'output TPTP
+        case GenMode::SATBUILD: role = "axiom";              break; 
         case GenMode::UNSAT:    role = "negated_conjecture"; break;
         case GenMode::FREE:     role = "axiom";              break;
         }
@@ -69,10 +68,25 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
 }
 
 std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& budget) {
-    if (budget.and_left == 0)
-        throw std::logic_error("generateUNSAT: budget AND exhausted");
-    if (budget.not_left == 0)
-        throw std::logic_error("generateUNSAT: budget NOT exhausted");
+
+    if (budget.and_left == 0) throw std::logic_error("generateUNSAT: budget AND exhausted");
+    if (budget.not_left == 0) throw std::logic_error("generateUNSAT: budget NOT exhausted");
+
+    // Validation
+    if (budget.and_left > 0 && budget.and_left % 2 != 1)
+        throw std::invalid_argument("UNSAT generation with exact budget requires an ODD total number of ANDs.");
+    if (budget.not_left > 0 && budget.not_left % 2 != 1)
+        throw std::invalid_argument("UNSAT generation with exact budget requires an ODD total number of NEGs.");
+
+    auto checkEven = [](int val, const std::string& name) {
+        if (val > 0 && val % 2 != 0)
+            throw std::invalid_argument("UNSAT generation with exact budget requires an EVEN total number of " + name );
+        };
+    checkEven(budget.or_left, "OR");
+    checkEven(budget.exists_left, "EXISTS");
+    checkEven(budget.forall_left, "FORALL");
+    checkEven(budget.implies_left, "IMPLIES");
+    checkEven(budget.eq_left, "EQUALITY");
 
     // budget snapshot
     BudgetState originalBudget = budget;
@@ -82,7 +96,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
 
     int childDepth = (depth > 0) ? depth - 1 : 0;
 
-    // phiBudget copy
+    // phiBudget copy 
     BudgetState phiBudget = budget;
     phiBudget.and_left = (budget.and_left > 0) ? budget.and_left / 2 : budget.and_left;
     phiBudget.or_left = (budget.or_left > 0) ? budget.or_left / 2 : budget.or_left;
@@ -156,9 +170,15 @@ SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget, const std::v
         if (left > 0) forced.push_back(t);
     }
 
-    auto& pick = (!forced.empty()) ? forced : candidates;
+    const std::vector<SymbolType>* pick = &candidates;
+    if (!forced.empty()) {
+        if (randInt(1, 100) <= 85) {
+            pick = &forced;
+        }
+    }
 
-    SymbolType chosen = pick[randInt(0, static_cast<int>(pick.size()) - 1)];
+    SymbolType chosen = (*pick)[randInt(0, static_cast<int>(pick->size()) - 1)];
+
     budget.consume(chosen);
     return chosen;
 }

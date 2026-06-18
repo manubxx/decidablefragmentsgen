@@ -61,7 +61,7 @@ public:
         for (int e = 0; e < dSize; ++e) {
             ext[v] = e;
 
-            // Backtracking dell'assegnamento (salvataggio stato)
+            
             Assignment oldAssign = currentAssign;
             currentAssign = ext;
 

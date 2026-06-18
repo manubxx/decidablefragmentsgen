@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <random>
+#include <stdexcept>
 
 //  FormulaBuilder — First generation
 

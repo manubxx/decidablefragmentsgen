@@ -76,54 +76,9 @@ Targets FO2SATGenerator::complementTargets(int domainSize, const Targets& target
 }
 
 bool FO2SATGenerator::evaluateASTNode(const ASTNode& node, const Assignment& assign, const FiniteModel& model) {
-    // atomic evaluation
-    if (auto* a = dynamic_cast<const AtomicNode*>(&node)) {
-        const auto& args = a->args();
-        Variable arg1 = varFromName(args[0].name);
-        Variable arg2 = (args.size() > 1) ? varFromName(args[1].name) : 0;
-        return model.evalAtom(a->predSymbol().name, a->predSymbol().arity, assign, arg1, arg2);
-    }
-
-    // equality evaluation
-    if (auto* eqNode = dynamic_cast<const EqualityNode*>(&node)) {
-        Variable v1 = varFromName(eqNode->lhs().name);
-        Variable v2 = varFromName(eqNode->rhs().name);
-        return assign[v1] == assign[v2];
-    }
-
-    // negation evaluation
-    if (auto* negNode = dynamic_cast<const NegNode*>(&node)) {
-        return !evaluateASTNode(negNode->child(), assign, model);
-    }
-
-    // binary connectives evaluation
-    if (auto* binConnNode = dynamic_cast<const BinaryConnNode*>(&node)) {
-        bool lv = evaluateASTNode(binConnNode->left(), assign, model);
-        bool rv = evaluateASTNode(binConnNode->right(), assign, model);
-        switch (binConnNode->connSymbol().type) {
-        case SymbolType::AND:     return lv && rv;
-        case SymbolType::OR:      return lv || rv;
-        case SymbolType::IMPLIES: return !lv || rv;
-        default: return false;
-        }
-    }
-
-    // quantifiers evaluation
-    if (auto* quantNode = dynamic_cast<const QuantifierNode*>(&node)) {
-        Variable v = varFromName(quantNode->var().name);
-        bool isExists = (quantNode->quantSymbol().type == SymbolType::EXISTS);
-
-        Assignment ext = assign;
-        int dSize = model.domainSize();
-        for (int e = 0; e < dSize; ++e) {
-            ext[v] = e;
-            bool val = evaluateASTNode(quantNode->body(), ext, model);
-            if (isExists && val)  return true;
-            if (!isExists && !val) return false;
-        }
-        return !isExists;
-    }
-    return false;
+    FO2Evaluator evaluator(assign, model);
+    node.accept(evaluator);
+    return evaluator.getResult();
 }
 
 std::unique_ptr<ASTNode> FO2SATGenerator::generateSAT(int depth, int domainSize, BudgetState& budget) {

@@ -10,7 +10,7 @@ add_executable(DecidableFragmentsGen
     main.cpp
     "fragments/fo2/FO2Generator.cpp"
     "fragments/fo2/FO2vocab.hpp"
-    "fragments/fo2/FO2SATGenerator.cpp"
+    "fragments/fo2/sat/FO2SATGenerator.cpp"
     "fragments/fluted/FlutedGenerator.cpp"
     "fragments/fluted/FLvocab.hpp"
     "fragments/guarded/GuardedGenerator.cpp"

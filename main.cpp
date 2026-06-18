@@ -1,7 +1,7 @@
 #include "CLI/CLIArgs.hpp"
 #include "CLI/CLIPrinter.hpp"
 #include "fragments/fo2/FO2Generator.hpp"
-#include <fragments/fo2/FO2SATGenerator.hpp>
+#include <fragments/fo2/sat/FO2SATGenerator.hpp>
 #include "fragments/fluted/FlutedGenerator.hpp"
 #include "fragments/guarded/GuardedGenerator.hpp"
 #include "fragments/unarynegation/UnaryNegGenerator.hpp"

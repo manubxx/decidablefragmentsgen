@@ -1,6 +1,7 @@
 #pragma once
-#include "FO2Generator.hpp"
+#include "fragments/fo2/FO2Generator.hpp"
 #include "models/FiniteModel.hpp"
+#include "FO2Evaluator.hpp"
 #include <vector>
 #include <memory>
 #include <string>

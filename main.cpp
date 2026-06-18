@@ -13,7 +13,7 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
 {
     int failures = 0;
     int generatedCount = 0;
-    const int MAX_ATTEMPTS = 50; // limite di tentativi per singola formula
+    const int MAX_ATTEMPTS = 50;
 
     while (generatedCount < count) {
         int attempts = 0;
@@ -36,7 +36,6 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
                     continue;
                 }
 
-                
                 if (cfg.mode == GenMode::SAT || cfg.mode == GenMode::SATBUILD) {
                     if (res.status == "Satisfiable" || res.status == "CounterSatisfiable")
                         formulaAccepted = true;
@@ -80,7 +79,6 @@ int main(int argc, char* argv[])
         std::cerr << "Error: " << e.what() << "\n";
         return 1;
     }
-    args.cfg.mode = GenMode::SATBUILD;
 
     VampireRunner vampireRunner(args.vampirePath);
 
@@ -93,14 +91,7 @@ int main(int argc, char* argv[])
     int failures = 0;
 
     if (args.fragment == "fo2") {
-        // Allineamento di sicurezza se il parser fa un fallback silenzioso dell'enum
-        if (args.cfg.mode == GenMode::FREE && argc > 1) {
-            for (int i = 1; i < argc; ++i) {
-                if (std::string(argv[i]) == "satbuild") {
-                    args.cfg.mode = GenMode::SATBUILD;
-                }
-            }
-        }
+        
 
         printHeader("FO2", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
 
@@ -133,5 +124,5 @@ int main(int argc, char* argv[])
         std::cerr << "\n WARNING: " << failures << "/" << args.count << " formulae not generated.\n"
         << "Suggestion: increase --depth or reduce constraints.\n\n";
 
-    return 0;
+    return failures > 0 ? 1 : 0; 
 }

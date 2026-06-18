@@ -16,6 +16,14 @@
 //   startVar()     : initial variable
 //   nextVar()      : next variable to be bound
 
+
+class BudgetRetryException : public std::exception {
+public:
+    [[nodiscard]] const char* what() const noexcept override {
+        return "Budget constraints error. Retrying generation.";
+    }
+};
+
 class FormulaBuilder {
 public:
     explicit FormulaBuilder(unsigned seed);
@@ -120,11 +128,13 @@ protected:
 
     [[nodiscard]] virtual std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) = 0; 
 
+    
+
     [[nodiscard]] virtual std::string startVar() const = 0;
     [[nodiscard]] virtual std::string nextVar(const std::string& currentVar) const = 0;
 
     // Shared methods
-    [[nodiscard]] std::unique_ptr<ASTNode> build(int depth, const std::string& currentVar, BudgetState& budget);
+    [[nodiscard]] virtual std::unique_ptr<ASTNode> build(int depth, const std::string& currentVar, BudgetState& budget);
 
     [[nodiscard]] std::unique_ptr<ASTNode> generateUNSAT(int depth, BudgetState& budget);
 

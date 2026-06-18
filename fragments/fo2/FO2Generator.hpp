@@ -19,18 +19,16 @@ protected:
 
     [[nodiscard]] std::string nextVar(const std::string& v) const override { return (v == "v1") ? "v2" : "v1";}
 
+
     [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;
 
-    [[nodiscard]] std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) override;
+    [[nodiscard]] std::unique_ptr<ASTNode>    generateSAT(int depth, int domainSize, BudgetState& budget) override;
 
-    [[nodiscard]]  std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) override;
+    [[nodiscard]]  std::unique_ptr<ASTNode>   buildComponentUNSAT(int depth, BudgetState& budget) override;
 
 
 private:
 
-    
-
-    std::unique_ptr<ASTNode>      build(int depth, const std::string& currentVar, BudgetState& budget);
     std::unique_ptr<EqualityNode> buildEqualityAtom(const std::string& currentVar);
 
 public:

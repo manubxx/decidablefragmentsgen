@@ -33,8 +33,8 @@ std::string FormulaBuilder::generateFormatted(const GenConfig& cfg) {
                 break;
             }
         }
-        catch (const std::exception&) {
-            continue;
+        catch (const BudgetRetryException&) {
+            continue; 
         }
 
         if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {

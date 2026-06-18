@@ -53,9 +53,7 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
             BudgetState bs(cfg.budget, rng_);
 
             try { formula = buildFL(cfg.depth, 0, bs); }
-            catch (const BudgetRetryException&) {
-                continue;
-            }
+            catch (const BudgetRetryException&) {continue;}
 
             if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
                 budgetOk = true;

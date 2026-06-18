@@ -60,7 +60,7 @@ std::string UnaryNegGenerator::generateFormatted(const GenConfig& cfg)
             try {
                 formula = buildUN(cfg.depth, {}, bs);
             }
-            catch (const std::exception&) { continue; }
+            catch (const BudgetRetryException&) { continue; }
 
             if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
                 budgetOk = true;
@@ -88,9 +88,7 @@ std::string UnaryNegGenerator::generateFormatted(const GenConfig& cfg)
             try {
                 formula = generateUNSAT(cfg.depth, bs);
             }
-            catch (const std::exception&) {
-                continue;
-            }
+            catch (const BudgetRetryException&) { continue; }
 
             if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
                 budgetOk = true;
@@ -134,30 +132,39 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
 {
     // If no variables are in scope yet, we must introduce one
     // with a (structural, budget-free) quantifier before we can build any atom.
-    auto forcedQuant = [&](int d, const std::vector<std::string>& scope) -> std::unique_ptr<ASTNode>
-        {
-            bool existential = (randInt(0, 1) == 0);
-            std::string newVar;
-            if (scope.empty()) {
-                newVar = startVar();
-            }
-            else {
-                int maxIdx = 0;
-                for (const auto& v : scope) {
-                    int idx = std::stoi(v.substr(1));
-                    if (idx > maxIdx) maxIdx = idx;
-                }
-                newVar = "x" + std::to_string(maxIdx + 1);
-            }
+    auto forcedQuant = [&](int d, const std::vector<std::string>& scope) -> std::unique_ptr<ASTNode> {
+        const bool canExists = budget.canUse(SymbolType::EXISTS);
+        const bool canForall = budget.canUse(SymbolType::FORALL);
 
-            std::vector<std::string> newScope = scope;
-            newScope.push_back(newVar);
+        if (!canExists && !canForall) {
+            throw BudgetRetryException();
+        }
 
-            auto quantSym = existential ? Symbol::exists() : Symbol::forall();
-            int nextDepth = (d > 0) ? d - 1 : 0;
-            auto body = buildUN(nextDepth, newScope, budget);
-            return std::make_unique<QuantifierNode>(
-                quantSym, Symbol::var(newVar), std::move(body));
+        bool existential = canExists && (!canForall || randInt(0, 1) == 0);
+
+        budget.consume(existential ? SymbolType::EXISTS : SymbolType::FORALL);
+
+        std::string newVar;
+        if (scope.empty()) {
+            newVar = startVar();
+        }
+        else {
+            int maxIdx = 0;
+            for (const auto& v : scope) {
+                int idx = std::stoi(v.substr(1));
+                if (idx > maxIdx) maxIdx = idx;
+            }
+            newVar = "x" + std::to_string(maxIdx + 1);
+        }
+
+        std::vector<std::string> newScope = scope;
+        newScope.push_back(newVar);
+
+        auto quantSym = existential ? Symbol::exists() : Symbol::forall();
+        int nextDepth = (d > 0) ? d - 1 : 0;
+        auto body = buildUN(nextDepth, newScope, budget);
+        return std::make_unique<QuantifierNode>(
+            quantSym, Symbol::var(newVar), std::move(body));
         };
 
 
@@ -272,10 +279,8 @@ std::vector<SymbolType> UnaryNegGenerator::candidateTypesUN(int depth, const std
     for (auto t : pool) {
         if (!bs.canUse(t)) continue;
 
-        if (t == SymbolType::NEG && currFreeVars.size() > 1)
-            continue;   //illegal in UNFO
         if (t == SymbolType::EQUALITY && currFreeVars.size() < 2)
-            continue;   // x=y atleast two vars in scope 
+            continue;
 
         candidates.push_back(t);
     }
@@ -288,7 +293,7 @@ std::unique_ptr<AtomicNode> UnaryNegGenerator::buildAtomicUN(const std::vector<s
 {
     auto adm = admissiblePreds(scope);
     if (adm.empty())
-        throw std::logic_error("UNFO::buildAtomicLeaf: no predicate admissible at scope size=" + std::to_string(scope.size()));
+        throw BudgetRetryException();
 
     int idx = adm[randInt(0, static_cast<int>(adm.size()) - 1)];
     const auto& p = activeVocab_[idx];

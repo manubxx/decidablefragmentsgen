@@ -58,11 +58,7 @@ std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
             currScopeFreeVars = { "x1" };
 
             try { formula = buildGF(cfg.depth, bs); }
-            catch (const std::exception& e) {
-                if (attempt < 3)
-                    std::cerr << "[DEBUG retry " << attempt << "] exception: " << e.what() << "\n";
-                continue;
-            }
+            catch (const BudgetRetryException&) {continue;}
 
             if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
                 budgetOk = true;
@@ -90,11 +86,7 @@ std::string GuardedGenerator::generateFormatted(const GenConfig& cfg)
                 currScopeFreeVars = { "x1" };
                 formula = generateUNSAT(cfg.depth, bs);
             }
-            catch (const std::exception& e) {
-                if (attempt < 3)
-                    std::cerr << "[DEBUG retry " << attempt << "] exception: " << e.what() << "\n";
-                continue;
-            }
+            catch (const BudgetRetryException&) {continue;}
 
             if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
                 budgetOk = true;
@@ -176,7 +168,21 @@ std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budge
 
     case SymbolType::EXISTS: {
         int maxK = std::min(3, depth);
-        int k = randInt(1, maxK);
+
+        std::vector<int> validK;
+        for (int k = 1; k <= maxK; ++k) {
+            int requiredArity = static_cast<int>(currScopeFreeVars.size()) + k;
+            if (!admissibleGuards(requiredArity).empty()) {
+                validK.push_back(k);
+            }
+        }
+
+        if (validK.empty()) {
+            throw BudgetRetryException();
+        }
+
+        int k = validK[randInt(0, static_cast<int>(validK.size()) - 1)];
+      
         auto boundVars = nextVarNames(k);
         auto guard = buildGuard(currScopeFreeVars, boundVars);
 
@@ -269,27 +275,26 @@ std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomicGF(const std::vector<st
 //  buildGuard
 std::unique_ptr<AtomicNode> GuardedGenerator::buildGuard(const std::vector<std::string>& outerScopeVars, const std::vector<std::string>& boundVars)
 {
-    for (int k = static_cast<int>(boundVars.size()); k >= 0; --k) {
-        int totalArity = static_cast<int>(outerScopeVars.size()) + k;
-        if (totalArity < 1) continue;
 
-        auto guards = admissibleGuards(totalArity);
-        if (guards.empty()) continue;
+    int totalArity = static_cast<int>(outerScopeVars.size() + boundVars.size());
 
-        int idx = guards[randInt(0, static_cast<int>(guards.size()) - 1)];
-        const auto& p = activeVocab_[idx];
+    auto guards = admissibleGuards(totalArity);
 
-        std::vector<Symbol> args;
-        args.reserve(p.arity);
-        for (const auto& v : outerScopeVars)
-            args.push_back(Symbol::var(v));
-        for (int i = 0; i < k; ++i)
-            args.push_back(Symbol::var(boundVars[i]));
-
-        return std::make_unique<AtomicNode>(Symbol::pred(p.name, p.arity), std::move(args));
+    if (guards.empty()) {
+        throw std::logic_error("GuardedGenerator::buildGuard: no guard found");
     }
 
-    throw std::logic_error("GuardedGenerator::buildGuard: no guard predicate found for outerScope=" + std::to_string(outerScopeVars.size())  + " + boundVars=" + std::to_string(boundVars.size()));
+    int idx = guards[randInt(0, static_cast<int>(guards.size()) - 1)];
+    const auto& p = activeVocab_[idx];
+
+    std::vector<Symbol> args;
+    args.reserve(p.arity);
+    for (const auto& v : outerScopeVars)
+        args.push_back(Symbol::var(v));
+    for (const auto& v : boundVars)
+        args.push_back(Symbol::var(v)); 
+
+    return std::make_unique<AtomicNode>(Symbol::pred(p.name, p.arity), std::move(args));
 }
 
 

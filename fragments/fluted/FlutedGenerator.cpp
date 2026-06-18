@@ -53,7 +53,9 @@ std::string FlutedGenerator::generateFormatted(const GenConfig& cfg)
             BudgetState bs(cfg.budget, rng_);
 
             try { formula = buildFL(cfg.depth, 0, bs); }
-            catch (const std::exception&) { continue; }
+            catch (const BudgetRetryException&) {
+                continue;
+            }
 
             if (!cfg.budget.hasAnyConstraint() || bs.satisfied()) {
                 budgetOk = true;
@@ -109,7 +111,7 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
         const bool canForall = budget.canUse(SymbolType::FORALL);
 
         if (!canExists && !canForall)
-            throw std::logic_error("FL::forcedQuant: both EXISTS and FORALL forbidden by budget");
+            throw BudgetRetryException();
 
         const bool exists = canExists && (!canForall || randInt(0, 1) == 0);
         budget.consume(exists ? SymbolType::EXISTS : SymbolType::FORALL);

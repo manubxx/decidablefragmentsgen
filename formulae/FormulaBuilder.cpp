@@ -183,7 +183,7 @@ SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget, const std::v
     return chosen;
 }
 
-// pickType — wrapper retrocompatibile
+// pickType 
 SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget) {
     auto candidates = candidateTypes(depth, budget);
     return pickType(depth, budget, candidates);

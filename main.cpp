@@ -5,6 +5,7 @@
 #include "fragments/fluted/FlutedGenerator.hpp"
 #include "fragments/guarded/GuardedGenerator.hpp"
 #include "fragments/unarynegation/UnaryNegGenerator.hpp"
+#include "tests/fo2/testFO2.hpp"
 #include "vampire/VampireRunner.hpp"
 #include <iostream>
 
@@ -41,7 +42,7 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
                         formulaAccepted = true;
                 }
                 else if (cfg.mode == GenMode::UNSAT) {
-                    if (res.status == "Unsatisfiable")
+                    if (res.status == "Unsatisfiable" || res.status == "Theorem" || res.status == "Contradiction")
                         formulaAccepted = true;
                 }
                 else {
@@ -78,6 +79,18 @@ int main(int argc, char* argv[])
     catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
         return 1;
+    }
+
+    //tests
+    if (!args.testMode.empty()) {
+        if (args.testMode == "fo2") {
+            tests::runFO2Tests();
+        }
+        else {
+            std::cerr << "Test suite unknown: " << args.testMode << "\n";
+            return 1;
+        }
+        return 0; 
     }
 
     VampireRunner vampireRunner(args.vampirePath);

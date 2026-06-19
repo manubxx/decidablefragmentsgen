@@ -1,4 +1,4 @@
-#include "CliArgs.hpp"
+#include "CLIArgs.hpp"
 #include <algorithm>
 #include <iostream>
 #include <random>
@@ -207,6 +207,7 @@ AppArgs parseArgs(int argc, char* argv[])
         else if (arg == "--forall")          args.cfg.budget.forall_count = parseRange(val);
         else if (arg == "--implies")         args.cfg.budget.implies_count = parseRange(val);
         else if (arg == "--eq")              args.cfg.budget.eq_count = parseRange(val);
+        else if (arg == "--test") {          args.testMode = val;}
 
         else {
             throw std::invalid_argument("Unknown option: '" + arg + "'. Use --help.");

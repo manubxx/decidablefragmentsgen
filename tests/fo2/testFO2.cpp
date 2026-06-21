@@ -9,7 +9,7 @@
 namespace tests {
 
     static void printTest(const std::string& name, bool passed) {
-        std::cout << "[TEST] " << name << " : " << (passed ? "Correct" : "FAILED") << "\n";
+        std::cout << "[TEST] " << name << " : " << (passed ? "Correct" : "Failed") << "\n";
     }
 
     // TEST 1: depth limits
@@ -157,7 +157,7 @@ namespace tests {
             printTest("FO2SATTest8 SATBUILD Fallback ", Success && !generatedFormula.empty());
         }
 
-        // 3. stress limit allocation
+        //  stress limit allocation
         {
             cfg.depth = 4;
             cfg.domainSize = 10;

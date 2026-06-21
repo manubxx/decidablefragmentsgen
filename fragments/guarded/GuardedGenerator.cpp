@@ -158,10 +158,11 @@ std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budge
             buildGF(depth - 1, budget));
 
     case SymbolType::EQUALITY: {
-        // Garantito ammissibile da candidateTypesGF (scope >= 2)
+       
         int i = randInt(0, static_cast<int>(currScopeFreeVars.size()) - 1);
         int j;
         do { j = randInt(0, static_cast<int>(currScopeFreeVars.size()) - 1); } while (j == i);
+
         return std::make_unique<EqualityNode>(
             Symbol::var(currScopeFreeVars[i]), Symbol::var(currScopeFreeVars[j]));
     }
@@ -225,7 +226,7 @@ std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budge
 // candidateTypesGF — FormulaBuilder candidateTypes specification:
 std::vector<SymbolType> GuardedGenerator::candidateTypesGF(int depth, const BudgetState& bs) const
 {
-    auto candidates = candidateTypes(depth, bs);   // filtro budget dal padre
+    auto candidates = candidateTypes(depth, bs);   // filtro budget from FormulaBuilder
 
     // remove EQUALITY if not enough vars in scope
     if (currScopeFreeVars.size() < 2)

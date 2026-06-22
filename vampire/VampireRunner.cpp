@@ -10,10 +10,13 @@
 
 #ifdef _WIN32
 #  include <windows.h>
+#  include <process.h>   
 #  define POPEN  _popen
 #  define PCLOSE _pclose
+#  define getpid _getpid  
 #else
 #  include <cstring>
+#  include <unistd.h>     
 #  define POPEN  popen
 #  define PCLOSE pclose
 #endif

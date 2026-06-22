@@ -15,7 +15,7 @@ private:
     }
 
 public:
-    FO2Evaluator(const Assignment& assign, const FiniteModel& model)  : currentAssign(assign), model_(model) {
+    FO2Evaluator(const Assignment& assign, const FiniteModel& model) : currentAssign(assign), model_(model) {
     }
 
     [[nodiscard]] bool getResult() const { return result_; }

@@ -13,10 +13,10 @@ public:
     explicit Formula(Tokens t) : tokens_(std::move(t)) {}
 
     // read-only access
-    [[nodiscard]] const Tokens& tokens() const { return tokens_; }
-    [[nodiscard]] std::size_t   size()   const { return tokens_.size(); }
+    const Tokens& tokens() const { return tokens_; }
+    std::size_t   size()   const { return tokens_.size(); }
 
-    [[nodiscard]] int totalKValue() const {
+    int totalKValue() const {
         int sum = 0;
         for (const auto& s : tokens_) sum += s.kValue();
         return sum;
@@ -26,7 +26,7 @@ public:
     //   1) Sequence is not empty
     //   2) Every proper prefix has sum K <= 0
     //   3) Total sum is exactly 1
-    [[nodiscard]] bool isValid() const {
+    bool isValid() const {
         if (tokens_.empty()) return false;
 
         int sum = 0;
@@ -39,7 +39,7 @@ public:
     }
 
     // Print
-    [[nodiscard]] std::string toString() const {
+    std::string toString() const {
         std::string out;
         for (std::size_t i = 0; i < tokens_.size(); ++i) {
             if (i > 0) out += ' ';
@@ -49,7 +49,7 @@ public:
     }
 
     // Debug: K every symbol
-    [[nodiscard]] std::string debugKTrace() const {
+    std::string debugKTrace() const {
         std::string out;
         int running = 0;
         for (const auto& s : tokens_) {

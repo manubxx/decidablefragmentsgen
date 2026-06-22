@@ -6,9 +6,7 @@
 
 // AtomicNode Implementation
 // ==========================================
-
-AtomicNode::AtomicNode(Symbol predSymbol, std::vector<Symbol> args)
-    : pred_(std::move(predSymbol)), args_(std::move(args))
+AtomicNode::AtomicNode(Symbol predSymbol, std::vector<Symbol> args) : pred_(std::move(predSymbol)), args_(std::move(args))
 {
     if (pred_.type != SymbolType::PREDICATE)
         throw std::invalid_argument("AtomicNode: symbol is not PREDICATE");
@@ -62,9 +60,7 @@ void AtomicNode::accept(ASTVisitor& visitor) const {
 
 // EqualityNode Implementation
 // ==========================================
-
-EqualityNode::EqualityNode(Symbol lhs, Symbol rhs)
-    : lhs_(std::move(lhs)), rhs_(std::move(rhs))
+EqualityNode::EqualityNode(Symbol lhs, Symbol rhs) : lhs_(std::move(lhs)), rhs_(std::move(rhs))
 {
     if (lhs_.type != SymbolType::VARIABLE)
         throw std::invalid_argument("EqualityNode: lhs is not a VARIABLE: " + lhs_.name);
@@ -131,7 +127,6 @@ void NegNode::accept(ASTVisitor& visitor) const {
 
 // BinaryConnNode Implementation
 // ==========================================
-
 BinaryConnNode::BinaryConnNode(Symbol connSymbol, std::unique_ptr<ASTNode> left, std::unique_ptr<ASTNode> right)
     : conn_(std::move(connSymbol)), left_(std::move(left)), right_(std::move(right))
 {
@@ -183,8 +178,7 @@ void BinaryConnNode::accept(ASTVisitor& visitor) const {
 // QuantifierNode Implementation
 // ==========================================
 
-QuantifierNode::QuantifierNode(Symbol quant, Symbol var, std::unique_ptr<ASTNode> body)
-    : quant_(std::move(quant)), var_(std::move(var)), body_(std::move(body))
+QuantifierNode::QuantifierNode(Symbol quant, Symbol var, std::unique_ptr<ASTNode> body) : quant_(std::move(quant)), var_(std::move(var)), body_(std::move(body))
 {
     if (quant_.type != SymbolType::FORALL && quant_.type != SymbolType::EXISTS)
         throw std::invalid_argument("QuantifierNode: symbol is not a quantifier: " + quant_.name);

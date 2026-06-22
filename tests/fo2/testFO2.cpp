@@ -105,7 +105,7 @@ namespace tests {
         }
         catch (...) {}
         printTest("FO2Test5 Arity", arityError);
-
+ 
         // the arity filter must match the active vocabulary
         std::vector<PredInfo> vocab = { {"R", 2} }; // arity 2
         FO2Generator gen(vocab, 42);
@@ -157,7 +157,7 @@ namespace tests {
             printTest("FO2SATTest8 SATBUILD Fallback ", Success && !generatedFormula.empty());
         }
 
-        //  stress limit allocation
+        // stress limit allocation
         {
             cfg.depth = 4;
             cfg.domainSize = 10;

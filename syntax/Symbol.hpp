@@ -23,7 +23,7 @@ struct Symbol {
     std::string name;
     int arity = 0; 
 
-    [[nodiscard]] int kValue() const {
+    int kValue() const {
         switch (type) {
             case SymbolType::LPAREN:    return -1;
             case SymbolType::RPAREN:    return +1;

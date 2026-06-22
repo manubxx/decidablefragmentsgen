@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-// Forward declarations Visitor pattern
+//  Visitor pattern Forward declarations
 class AtomicNode;
 class EqualityNode;
 class NegNode;
@@ -28,10 +28,10 @@ class ASTNode {
 public:
     virtual ~ASTNode() = default;
 
-    [[nodiscard]] virtual std::string toString() const = 0;
-    [[nodiscard]] virtual std::string toTPTP() const = 0;
-    [[nodiscard]] virtual std::unique_ptr<ASTNode> clone() const = 0;
-    [[nodiscard]] virtual std::unique_ptr<ASTNode> toNNF(bool negated = false) const = 0;
+    virtual std::string toString() const = 0;
+    virtual std::string toTPTP() const = 0;
+    virtual std::unique_ptr<ASTNode> clone() const = 0;
+    virtual std::unique_ptr<ASTNode> toNNF(bool negated = false) const = 0;
 
     
     virtual void accept(ASTVisitor& visitor) const = 0;
@@ -44,13 +44,13 @@ class AtomicNode final : public ASTNode {
 public:
     AtomicNode(Symbol predSymbol, std::vector<Symbol> args);
 
-    [[nodiscard]] const Symbol& predSymbol() const { return pred_; }
-    [[nodiscard]] const std::vector<Symbol>& args() const { return args_; }
+    const Symbol& predSymbol() const { return pred_; }
+    const std::vector<Symbol>& args() const { return args_; }
 
-    [[nodiscard]] std::string toString() const override;
-    [[nodiscard]] std::string toTPTP() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
+    std::string toString() const override;
+    std::string toTPTP() const override;
+    std::unique_ptr<ASTNode> clone() const override;
+    std::unique_ptr<ASTNode> toNNF(bool negated) const override;
 
     void accept(ASTVisitor& visitor) const override;
 
@@ -65,13 +65,13 @@ class EqualityNode final : public ASTNode {
 public:
     EqualityNode(Symbol lhs, Symbol rhs);
 
-    [[nodiscard]] const Symbol& lhs() const { return lhs_; }
-    [[nodiscard]] const Symbol& rhs() const { return rhs_; }
+    const Symbol& lhs() const { return lhs_; }
+    const Symbol& rhs() const { return rhs_; }
 
-    [[nodiscard]] std::string toString() const override;
-    [[nodiscard]] std::string toTPTP() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
+    std::string toString() const override;
+    std::string toTPTP() const override;
+    std::unique_ptr<ASTNode> clone() const override;
+    std::unique_ptr<ASTNode> toNNF(bool negated) const override;
 
     void accept(ASTVisitor& visitor) const override;
 
@@ -86,12 +86,12 @@ class NegNode final : public ASTNode {
 public:
     explicit NegNode(std::unique_ptr<ASTNode> child);
 
-    [[nodiscard]] const ASTNode& child() const { return *child_; }
+    const ASTNode& child() const { return *child_; }
 
-    [[nodiscard]] std::string toString() const override;
-    [[nodiscard]] std::string toTPTP() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
+    std::string toString() const override;
+    std::string toTPTP() const override;
+    std::unique_ptr<ASTNode> clone() const override;
+    std::unique_ptr<ASTNode> toNNF(bool negated) const override;
 
     void accept(ASTVisitor& visitor) const override;
 
@@ -104,14 +104,14 @@ class BinaryConnNode final : public ASTNode {
 public:
     BinaryConnNode(Symbol connSymbol, std::unique_ptr<ASTNode> left, std::unique_ptr<ASTNode> right);
 
-    [[nodiscard]] const Symbol& connSymbol() const { return conn_; }
-    [[nodiscard]] const ASTNode& left() const { return *left_; }
-    [[nodiscard]] const ASTNode& right() const { return *right_; }
+    const Symbol& connSymbol() const { return conn_; }
+    const ASTNode& left() const { return *left_; }
+    const ASTNode& right() const { return *right_; }
 
-    [[nodiscard]] std::string toString() const override;
-    [[nodiscard]] std::string toTPTP() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
+    std::string toString() const override;
+    std::string toTPTP() const override;
+    std::unique_ptr<ASTNode> clone() const override;
+    std::unique_ptr<ASTNode> toNNF(bool negated) const override;
 
     void accept(ASTVisitor& visitor) const override;
 
@@ -126,14 +126,14 @@ class QuantifierNode final : public ASTNode {
 public:
     QuantifierNode(Symbol quant, Symbol var, std::unique_ptr<ASTNode> body);
 
-    [[nodiscard]] const Symbol& quantSymbol() const { return quant_; }
-    [[nodiscard]] const Symbol& var() const { return var_; }
-    [[nodiscard]] const ASTNode& body() const { return *body_; }
+    const Symbol& quantSymbol() const { return quant_; }
+    const Symbol& var() const { return var_; }
+    const ASTNode& body() const { return *body_; }
 
-    [[nodiscard]] std::string toString() const override;
-    [[nodiscard]] std::string toTPTP() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> clone() const override;
-    [[nodiscard]] std::unique_ptr<ASTNode> toNNF(bool negated) const override;
+    std::string toString() const override;
+    std::string toTPTP() const override;
+    std::unique_ptr<ASTNode> clone() const override;
+    std::unique_ptr<ASTNode> toNNF(bool negated) const override;
 
     void accept(ASTVisitor& visitor) const override;
 

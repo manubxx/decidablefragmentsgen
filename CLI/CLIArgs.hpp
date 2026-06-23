@@ -15,8 +15,6 @@ struct AppArgs {
     std::string vampirePath    = "";
     int         vampireTimeout = 10;
 
-    //tests
-    std::string testMode = "";
 };
 struct HelpRequest {};   // --help guard
 

@@ -23,36 +23,32 @@ add_executable(DecidableFragmentsGen
     "CLI/CLIPrinter.cpp"
     "CLI/CLIArgs.cpp"  
     "syntax/ASTNode.cpp"  
-    "tests/fo2/testFO2.cpp"
 )
 
-# --- CONFIGURAZIONE FLAG COMPILATORE ---
-# --- CONFIGURAZIONE FLAG COMPILATORE ---
+
 if(MSVC)
-    # Flag per Windows (compilatore Visual Studio)
+    
     target_compile_options(DecidableFragmentsGen PRIVATE 
-        /EHsc      # Gestione eccezioni standard C++
-        /W4        # Warning di alto livello
-        # Nota: ho rimosso /O2. CMake gestisce le ottimizzazioni automaticamente
-        # quando decidi di compilare in modalità "Release".
+        /EHsc     
+        /W4        
+       
     )
 else()
-    # Flag per Linux (compilatori GCC o Clang) o MinGW
+    
     target_compile_options(DecidableFragmentsGen PRIVATE
         -Wall
         -pedantic
         -O3
         -fsanitize=address
-        -g         # Utile per avere informazioni esatte sulla riga
+        -g        
     )
-    # Su Linux, AddressSanitizer richiede di essere passato anche al linker!
+  
     target_link_options(DecidableFragmentsGen PRIVATE 
         -fsanitize=address
     )
 endif()
 
-# --- CONFIGURAZIONE VAMPIRE ---
-# Cerca prima in third_party/, poi nel PATH
+
 find_program(VAMPIRE_EXE NAMES vampire vampire.exe
    HINTS "${CMAKE_SOURCE_DIR}/utils/vampire-Windows-X64"
 )

@@ -1,12 +1,12 @@
-
 **/out/
 **/build/
 **/.vs/
 **/CMakeFiles/
 
-# binary files and exes 
+# binary files and exes
 *.exe
 *.obj
+*.o
 *.pdb
 *.ilk
 *.lib

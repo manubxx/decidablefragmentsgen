@@ -20,17 +20,17 @@ void printHeader(
     else if (cfg.mode == GenMode::UNSAT) modeStr = "UNSAT";
     else if (cfg.mode == GenMode::SATBUILD) modeStr = "SATBUILD";
 
-    std::cout << "--- GENERATION CONFIGURATION ---\n"
-        << "Fragment: " << fragment << "\n"
-        << "Mode: " << modeStr << "\n" // <-- Stampa la stringa corretta
-        << "Depth: " << cfg.depth << " | Count: " << count << " | Seed: " << seed << "\n"
-        << "Domain Size: " << cfg.domainSize << "\n"
-        << "Vocabulary Size: " << vocab.size() << " predicates.\n";
+    std::cout << "% GENERATION CONFIGURATION \n"
+        << "%Fragment: " << fragment << "\n"
+        << "%Mode: " << modeStr << "\n" 
+        << "%Depth: " << cfg.depth << " | Count: " << count << " | Seed: " << seed << "\n"
+        << "%Domain Size: " << cfg.domainSize << "\n"
+        << "%Vocabulary Size: " << vocab.size() << " predicates.\n";
 
     if (verify) {
-        std::cout << "Verification: Vampire Prover active (" << vampireTimeout << "s timeout)\n";
+        std::cout << "%Verification: Vampire Prover active (" << vampireTimeout << "s timeout)\n";
     }
-    std::cout << "--------------------------------\n\n";
+    
 }
 
 // printFormula

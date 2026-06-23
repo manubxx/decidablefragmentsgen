@@ -5,7 +5,6 @@
 #include "fragments/fluted/FlutedGenerator.hpp"
 #include "fragments/guarded/GuardedGenerator.hpp"
 #include "fragments/unarynegation/UnaryNegGenerator.hpp"
-#include "tests/fo2/testFO2.hpp"
 #include "vampire/VampireRunner.hpp"
 #include <iostream>
 
@@ -81,17 +80,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    //tests
-    if (!args.testMode.empty()) {
-        if (args.testMode == "fo2") {
-            tests::runFO2Tests();
-        }
-        else {
-            std::cerr << "Test suite unknown: " << args.testMode << "\n";
-            return 1;
-        }
-        return 0; 
-    }
+    
 
     VampireRunner vampireRunner(args.vampirePath);
 

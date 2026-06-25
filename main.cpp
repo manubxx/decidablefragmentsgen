@@ -9,8 +9,7 @@
 #include <iostream>
 
 template <typename Gen>
-static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, const VampireRunner* runner, int timeout)
-{
+static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, const VampireRunner* runner, int timeout) {
     int failures = 0;
     int generatedCount = 0;
     const int MAX_ATTEMPTS = 50;
@@ -20,8 +19,10 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
         bool formulaAccepted = false;
         std::string formula;
 
+        
         while (!formulaAccepted && attempts < MAX_ATTEMPTS) {
             ++attempts;
+
             try {
                 formula = gen.generateFormatted(cfg);
 
@@ -31,24 +32,37 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
                 }
 
                 auto res = runner->run(formula, timeout);
+
                 if (res.runError) {
                     std::cerr << "  [VAMPIRE ERROR] " << res.rawOutput << "\n";
-                    continue;
+                    continue; 
                 }
 
+              
                 if (cfg.mode == GenMode::SAT || cfg.mode == GenMode::SATBUILD) {
-                    if (res.status == "Satisfiable" || res.status == "CounterSatisfiable")
+                    if (res.status == "Satisfiable" || res.status == "CounterSatisfiable") {
                         formulaAccepted = true;
+
+                       
+                        if (attempts > 1) {
+                            std::cout << "  [INFO] SAT formula found after " << attempts<< " attempts (Discarded: " << (attempts - 1) << ").\n";
+                        }
+                    }
                 }
                 else if (cfg.mode == GenMode::UNSAT) {
-                    if (res.status == "Unsatisfiable" || res.status == "Theorem" || res.status == "Contradiction")
+                    if (res.status == "Unsatisfiable" || res.status == "Theorem" || res.status == "Contradiction") {
                         formulaAccepted = true;
+
+                        if (attempts > 1) {
+                            std::cout << "  [INFO] UNSAT formula found after " << attempts<< " attempts (Discarded: " << (attempts - 1) << ").\n";
+                        }
+                    }
                 }
                 else {
-                    formulaAccepted = true; // FREE
+                    formulaAccepted = true;
                 }
             }
-            catch (const std::exception&) {
+            catch (const std::exception& e) {
                 continue;
             }
         }
@@ -58,11 +72,15 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
             printFormula(generatedCount, cfg, formula, verify, runner, timeout);
         }
         else {
-            std::cerr << "Unable to generate a valid formula after " << MAX_ATTEMPTS << " attempts\n";
+
+            std::cerr << "  [WARNING] Unable to generate a valid formula after "
+                << MAX_ATTEMPTS << " attempts. Skipping.\n";
+
             ++failures;
             ++generatedCount;
         }
     }
+
     return failures;
 }
 

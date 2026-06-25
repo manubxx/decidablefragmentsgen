@@ -50,7 +50,7 @@ public:
      * @param timeLimitSec time limit forwarded to Vampire (seconds).
      * @return             a Result struct containing the SZS status, elapsed time, and the raw output.                 
      */
-    Result run(const std::string& tptpFormula, int timeLimitSec = 10) const;
+    Result run(const std::string& tptpFormula, int timeLimitSec = 10, int memoryLimit = 4096) const;
 
 
     /**

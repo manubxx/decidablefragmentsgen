@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <array>
 #include <iostream>
-
+#include <atomic>
 #ifdef _WIN32
 #  include <windows.h>
 #  include <process.h>   
@@ -57,70 +57,41 @@ bool VampireRunner::isAvailable() const
 
 
 // run
-VampireRunner::Result VampireRunner::run(const std::string& tptpFormula,
-    int timeLimitSec) const
+
+
+VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int timeLimitSec, int memoryLimit) const
 {
     Result result;
 
-    // Build a unique temporary file name 
+    static std::atomic<int> fileCounter{ 0 };
+    std::string inputFile = "temp_vampire_" + std::to_string(getpid()) + "_" + std::to_string(++fileCounter) + ".p";
+
+    std::ofstream out(inputFile);
+    if (!out) {
+        result.runError = true;
+        result.status = "Error";
+        result.rawOutput = "Cannot create temporary file.";
+        return result;
+    }
+    out << tptpFormula;
+    out.close();
+
+    std::string cmd;
 #ifdef _WIN32
-    char tmpPath[MAX_PATH];
-    GetTempPathA(MAX_PATH, tmpPath);
-    for (char* p = tmpPath; *p; ++p) if (*p == '\\') *p = '/';
-    std::string inputFile = std::string(tmpPath) + "vamp_input_"
-        + std::to_string(GetCurrentProcessId()) + ".p";
+  
+    cmd = vampirePath_ + " -t " + std::to_string(timeLimitSec) +
+        " -m " + std::to_string(memoryLimit) + " " + inputFile + " 2>&1";
 #else
-    std::string inputFile = "/tmp/vamp_input_"
-        + std::to_string(getpid()) + ".p";
+    
+    int hardTimeout = timeLimitSec + 5;
+    cmd = "timeout " + std::to_string(hardTimeout) + " " + vampirePath_ +
+        " -t " + std::to_string(timeLimitSec) +
+        " -m " + std::to_string(memoryLimit) + " " + inputFile + " 2>&1";
 #endif
 
-    {
-        std::ofstream ofs(inputFile);
-        if (!ofs.is_open()) {
-            result.runError = true;
-            result.status = "Error";
-            result.rawOutput = "Could not create temporary input file: " + inputFile;
-            std::remove(inputFile.c_str());
-            return result;
-        }
-        ofs << tptpFormula << "\n";
-    }
-
-    std::ostringstream cmdStream;
-
-#ifdef _WIN32
-    // Convert a Windows absolute path (e.g. C:\...) to its WSL mount point
-    std::string wslVampire = vampirePath_;
-    if (wslVampire.size() >= 2 && wslVampire[1] == ':') {
-        char d = std::tolower(wslVampire[0]);
-        wslVampire = "/mnt/" + std::string(1, d) + wslVampire.substr(2);
-    }
-    std::replace(wslVampire.begin(), wslVampire.end(), '\\', '/');
-
-    std::string wslInput = inputFile;
-    if (wslInput.size() >= 2 && wslInput[1] == ':') {
-        char d = std::tolower(wslInput[0]);
-        wslInput = "/mnt/" + std::string(1, d) + wslInput.substr(2);
-    }
-    std::replace(wslInput.begin(), wslInput.end(), '\\', '/');
-
-    cmdStream << "wsl " << wslVampire
-        << " --time_limit " << timeLimitSec
-        << " --memory_limit 2048"
-        << " " << wslInput
-        << " 2>&1";
-#else
-    // Native Linux: invoke Vampire directly with a fixed memory
-    cmdStream << vampirePath_
-        << " --time_limit " << timeLimitSec
-        << " --memory_limit 2048"
-        << " " << inputFile
-        << " 2>&1";
-#endif
-
-    std::string cmd = cmdStream.str();
-
+ 
     FILE* pipe = POPEN(cmd.c_str(), "r");
+   
     if (!pipe) {
         result.runError = true;
         result.status = "Error";

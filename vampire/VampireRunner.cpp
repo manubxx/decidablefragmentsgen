@@ -8,19 +8,8 @@
 #include <array>
 #include <iostream>
 #include <atomic>
-#ifdef _WIN32
-#  include <windows.h>
-#  include <process.h>   
-#  define POPEN  _popen
-#  define PCLOSE _pclose
-#  define getpid _getpid  
-#else
-#  include <cstring>
-#  include <unistd.h>     
-#  define POPEN  popen
-#  define PCLOSE pclose
-#endif
-
+#include <cstring>
+#include <unistd.h>
 
 // Constructor
 VampireRunner::VampireRunner(std::string vampirePath)
@@ -38,27 +27,14 @@ VampireRunner::VampireRunner(std::string vampirePath)
 #endif
 }
 
-
 // isAvailable
 bool VampireRunner::isAvailable() const
 {
-#ifdef _WIN32
-    std::string checkCmd = "wsl " + vampirePath_ + " --version 2>&1";
-    FILE* pipe = _popen(checkCmd.c_str(), "r");
-    if (!pipe) return false;
-    char buf[64];
-    bool hasOutput = std::fgets(buf, sizeof(buf), pipe) != nullptr;
-    _pclose(pipe);
-    return hasOutput;
-#else
+    // Ora controlla nativamente il filesystem POSIX
     return std::filesystem::exists(vampirePath_);
-#endif
 }
 
-
 // run
-
-
 VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int timeLimitSec, int memoryLimit) const
 {
     Result result;
@@ -76,22 +52,15 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
     out << tptpFormula;
     out.close();
 
-    std::string cmd;
-#ifdef _WIN32
-  
-    cmd = vampirePath_ + " -t " + std::to_string(timeLimitSec) +
-        " -m " + std::to_string(memoryLimit) + " " + inputFile + " 2>&1";
-#else
-    
+    // Setup del comando nativo Linux con il tool `timeout`
     int hardTimeout = timeLimitSec + 5;
-    cmd = "timeout " + std::to_string(hardTimeout) + " " + vampirePath_ +
+    std::string cmd = "timeout " + std::to_string(hardTimeout) + " " + vampirePath_ +
         " -t " + std::to_string(timeLimitSec) +
         " -m " + std::to_string(memoryLimit) + " " + inputFile + " 2>&1";
-#endif
 
- 
-    FILE* pipe = POPEN(cmd.c_str(), "r");
-   
+    
+    FILE* pipe = popen(cmd.c_str(), "r");
+
     if (!pipe) {
         result.runError = true;
         result.status = "Error";
@@ -100,13 +69,13 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
         return result;
     }
 
-    // Vampire's stdout/stderr into a single string.
+    // Cattura stdout e stderr
     std::ostringstream outputStream;
     std::array<char, 256> buf;
     while (std::fgets(buf.data(), static_cast<int>(buf.size()), pipe))
         outputStream << buf.data();
 
-    PCLOSE(pipe);
+    pclose(pipe);
     std::remove(inputFile.c_str());
 
     result.rawOutput = outputStream.str();
@@ -126,14 +95,13 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
     return result;
 }
 
-
 // extractSZSStatus
 std::string VampireRunner::extractSZSStatus(const std::string& output)
 {
     const std::string marker = "SZS status ";
     auto pos = output.find(marker);
     if (pos == std::string::npos) {
-        // No SZS line found; check for an explicit time-limit message as fallback.
+        // Fallback per limiti di tempo espliciti
         if (output.find("Time limit") != std::string::npos ||
             output.find("time limit") != std::string::npos)
             return "Timeout";
@@ -148,11 +116,9 @@ std::string VampireRunner::extractSZSStatus(const std::string& output)
     return output.substr(pos, end - pos);
 }
 
-
 // extractElapsedTime
 double VampireRunner::extractElapsedTime(const std::string& output)
 {
-    // Vampire prints "% Time elapsed: X.XXX s" at the end of every run.
     const std::string marker = "Time elapsed: ";
     auto pos = output.find(marker);
     if (pos == std::string::npos) return 0.0;
@@ -165,6 +131,6 @@ double VampireRunner::extractElapsedTime(const std::string& output)
         return std::stod(output.substr(pos, end - pos));
     }
     catch (...) {
-        return 0.0; // Parsing failed
+        return 0.0;
     }
 }

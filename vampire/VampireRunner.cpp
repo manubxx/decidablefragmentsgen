@@ -35,8 +35,7 @@ bool VampireRunner::isAvailable() const
 }
 
 // run
-VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int timeLimitSec, int memoryLimit) const
-{
+VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int timeLimitSec, const std::string& extraFlags) const {
     Result result;
 
     static std::atomic<int> fileCounter{ 0 };
@@ -46,54 +45,54 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
     if (!out) {
         result.runError = true;
         result.status = "Error";
-        result.rawOutput = "Cannot create temporary file.";
+        result.rawOutput = "Failed to create temporary file for Vampire.";
         return result;
     }
     out << tptpFormula;
     out.close();
 
-    // Setup del comando nativo Linux con il tool `timeout`
-    int hardTimeout = timeLimitSec + 5;
+    int hardTimeout = timeLimitSec + 2;
+    int memoryLimit = 4096;
+
+    // INIETTIAMO EXTRA FLAGS NEL COMANDO DI SISTEMA
     std::string cmd = "timeout " + std::to_string(hardTimeout) + " " + vampirePath_ +
         " -t " + std::to_string(timeLimitSec) +
-        " -m " + std::to_string(memoryLimit) + " " + inputFile + " 2>&1";
+        " -m " + std::to_string(memoryLimit) + " " + extraFlags + " " + inputFile + " 2>&1";
 
-    
     FILE* pipe = popen(cmd.c_str(), "r");
-
     if (!pipe) {
+        std::filesystem::remove(inputFile);
         result.runError = true;
         result.status = "Error";
-        result.rawOutput = "Failed to launch Vampire. Check that '" + vampirePath_ + "' is on the PATH.";
-        std::remove(inputFile.c_str());
+        result.rawOutput = "popen() failed.";
         return result;
     }
 
-    // Cattura stdout e stderr
-    std::ostringstream outputStream;
-    std::array<char, 256> buf;
-    while (std::fgets(buf.data(), static_cast<int>(buf.size()), pipe))
-        outputStream << buf.data();
-
+    std::array<char, 256> buffer;
+    while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
+        result.rawOutput += buffer.data();
+    }
     pclose(pipe);
-    std::remove(inputFile.c_str());
 
-    result.rawOutput = outputStream.str();
+    std::filesystem::remove(inputFile);
+
     result.status = extractSZSStatus(result.rawOutput);
     result.elapsedTime = extractElapsedTime(result.rawOutput);
 
-    if (result.status == "Timeout")
+    if (result.status == "Timeout") {
         result.timedOut = true;
+    }
 
     if (result.rawOutput.empty()) {
         result.runError = true;
         result.status = "Error";
-        result.rawOutput = "No output received from Vampire. "
-            "Check that '" + vampirePath_ + "' is on the PATH.";
+        result.rawOutput = "No output received from Vampire.";
     }
 
     return result;
 }
+
+
 
 // extractSZSStatus
 std::string VampireRunner::extractSZSStatus(const std::string& output)

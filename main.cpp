@@ -6,7 +6,12 @@
 #include "fragments/guarded/GuardedGenerator.hpp"
 #include "fragments/unarynegation/UnaryNegGenerator.hpp"
 #include "vampire/VampireRunner.hpp"
+#include "tests/BenchmarkSuite.hpp" 
 #include <iostream>
+#include <fstream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 template <typename Gen>
 static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, const VampireRunner* runner, int timeout) {
@@ -14,12 +19,15 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
     int generatedCount = 0;
     const int MAX_ATTEMPTS = 50;
 
+    // Crea automaticamente la cartella per salvare le formule se non esiste ancora
+    std::string outputDir = "generated_output";
+    fs::create_directories(outputDir);
+
     while (generatedCount < count) {
         int attempts = 0;
         bool formulaAccepted = false;
         std::string formula;
 
-        
         while (!formulaAccepted && attempts < MAX_ATTEMPTS) {
             ++attempts;
 
@@ -34,18 +42,16 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
                 auto res = runner->run(formula, timeout);
 
                 if (res.runError) {
-                    std::cerr << "  [VAMPIRE ERROR] " << res.rawOutput << "\n";
-                    continue; 
+                    std::cerr << "VAMPIRE ERROR" << res.rawOutput << "\n";
+                    continue;
                 }
 
-              
                 if (cfg.mode == GenMode::SAT || cfg.mode == GenMode::SATBUILD) {
                     if (res.status == "Satisfiable" || res.status == "CounterSatisfiable") {
                         formulaAccepted = true;
 
-                       
                         if (attempts > 1) {
-                            std::cout << "  [INFO] SAT formula found after " << attempts<< " attempts (Discarded: " << (attempts - 1) << ").\n";
+                            std::cout << "  [INFO] SAT formula found after " << attempts << " attempts (Discarded: " << (attempts - 1) << ").\n";
                         }
                     }
                 }
@@ -54,7 +60,7 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
                         formulaAccepted = true;
 
                         if (attempts > 1) {
-                            std::cout << "  [INFO] UNSAT formula found after " << attempts<< " attempts (Discarded: " << (attempts - 1) << ").\n";
+                            std::cout << "  [INFO] UNSAT formula found after " << attempts << " attempts (Discarded: " << (attempts - 1) << ").\n";
                         }
                     }
                 }
@@ -69,12 +75,22 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
 
         if (formulaAccepted) {
             ++generatedCount;
+
+            
             printFormula(generatedCount, cfg, formula, verify, runner, timeout);
+
+            // Save the file on disk and naming
+            std::string extension = (cfg.output == OutputFormat::TPTP) ? ".p" : ".txt";
+            std::string fileName = outputDir + "/formula_" + std::to_string(generatedCount) + extension;
+
+            std::ofstream outFile(fileName);
+            if (outFile) {
+                outFile << formula;
+                outFile.close();
+            }
         }
         else {
-
-            std::cerr << "  [WARNING] Unable to generate a valid formula after "
-                << MAX_ATTEMPTS << " attempts. Skipping.\n";
+            std::cerr << "  [WARNING] Unable to generate a valid formula after " << MAX_ATTEMPTS << " attempts. Skipping.\n";
 
             ++failures;
             ++generatedCount;
@@ -84,8 +100,7 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
     return failures;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     AppArgs args;
     try {
         args = parseArgs(argc, argv);
@@ -98,21 +113,21 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    
-
     VampireRunner vampireRunner(args.vampirePath);
 
     if (args.verify && !vampireRunner.isAvailable()) {
-        std::cerr << "WARNING: Vampire not found at path: '" << args.vampirePath << "'.\n"
-            << "Verification will return 'Error'.\n\n";
+        std::cerr << "WARNING: Vampire not found at path: '" << args.vampirePath << "'.\n" << "Verification will return 'Error'.\n\n";
+    }
+
+    if (args.runBenchmarks) {
+        runDatasetBenchmarks(args, vampireRunner);
+        return 0;
     }
 
     const VampireRunner* runnerPtr = args.verify ? &vampireRunner : nullptr;
     int failures = 0;
 
     if (args.fragment == "fo2") {
-        
-
         printHeader("FO2", args.cfg, args.count, args.seed, args.cfg.vocab, args.verify, args.vampirePath, args.vampireTimeout);
 
         if (args.cfg.mode == GenMode::SATBUILD) {
@@ -144,5 +159,5 @@ int main(int argc, char* argv[])
         std::cerr << "\n WARNING: " << failures << "/" << args.count << " formulae not generated.\n"
         << "Suggestion: increase --depth or reduce constraints.\n\n";
 
-    return failures > 0 ? 1 : 0; 
+    return failures > 0 ? 1 : 0;
 }

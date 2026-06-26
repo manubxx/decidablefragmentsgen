@@ -18,6 +18,7 @@ OPZIONI BASE:
   --count <n>              Numero di formule da generare (default: 5)
   --seed <n>               Seme per riproducibilita' (default: casuale)
   --help                   Mostra questo messaggio ed esce
+  --run-benchmarks <path>  Esegue il test (CASC) sui file .p della cartella output_results
 
 OPZIONI STRUTTURA FORMULA:
   --and <n|min:max>        Nodi AND: esatti o intervallo 

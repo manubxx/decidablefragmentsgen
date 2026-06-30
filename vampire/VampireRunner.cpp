@@ -10,6 +10,8 @@
 #include <atomic>
 #include <cstring>
 #include <unistd.h>
+#include <regex>
+
 
 // Constructor
 VampireRunner::VampireRunner(std::string vampirePath)
@@ -89,6 +91,7 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
         result.rawOutput = "No output received from Vampire.";
     }
 
+    result.generatedClauses = extractGeneratedClauses(result.rawOutput);
     return result;
 }
 
@@ -100,7 +103,7 @@ std::string VampireRunner::extractSZSStatus(const std::string& output)
     const std::string marker = "SZS status ";
     auto pos = output.find(marker);
     if (pos == std::string::npos) {
-        // Fallback per limiti di tempo espliciti
+        // Fallback 
         if (output.find("Time limit") != std::string::npos ||
             output.find("time limit") != std::string::npos)
             return "Timeout";
@@ -132,4 +135,21 @@ double VampireRunner::extractElapsedTime(const std::string& output)
     catch (...) {
         return 0.0;
     }
+
+}
+
+long long VampireRunner::extractGeneratedClauses(const std::string& output) {
+    std::smatch match;
+   
+    std::regex reg(R"((\d+)\s+generated clauses)");
+
+    if (std::regex_search(output, match, reg)) {
+        try {
+            return std::stoll(match[1].str());
+        }
+        catch (...) {
+            return 0;
+        }
+    }
+    return 0; 
 }

@@ -1,10 +1,11 @@
 #!/bin/bash
 
+
 EXEC="../build/DecidableFragmentsGen" 
 
 BASE_DIR="./ff_datasets"
 
-#problems for each instance
+# problems for each instance
 COUNT=5
 
 mkdir -p "$BASE_DIR/ffbaseescalation"
@@ -61,7 +62,7 @@ $EXEC \
     --or "0:0" \
     --and "5:15" \
     --implies "2:5" \
-    > "$BASE_DIR/ffedgecases/ff_deepnarrow.p" # [CORREZIONE] Typo rimosso
+    > "$BASE_DIR/ffedgecases/ff_deepnarrow.p" 
 
 echo "Edge Case: (max ORs)"
 $EXEC \
@@ -84,5 +85,9 @@ $EXEC \
     --preds "4/4" \
     --transform nnf \
     > "$BASE_DIR/ffedgecases/ff_edge_nnf.p"
+
+
+echo "cleaning file"
+rm -rf ./generated_output
 
 echo " DONE"

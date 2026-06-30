@@ -6,7 +6,7 @@
 #include "fragments/guarded/GuardedGenerator.hpp"
 #include "fragments/unarynegation/UnaryNegGenerator.hpp"
 #include "vampire/VampireRunner.hpp"
-#include "tests/BenchmarkSuite.hpp" 
+#include "tests/benchmark.hpp" 
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -19,7 +19,7 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
     int generatedCount = 0;
     const int MAX_ATTEMPTS = 50;
 
-    // Crea automaticamente la cartella per salvare le formule se non esiste ancora
+    //output directory
     std::string outputDir = "generated_output";
     fs::create_directories(outputDir);
 
@@ -76,10 +76,10 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
         if (formulaAccepted) {
             ++generatedCount;
 
-            
+            std::string tptpHeader = "% ATTEMPTS: " + std::to_string(attempts) + "\n";
+            formula = tptpHeader + formula;
             printFormula(generatedCount, cfg, formula, verify, runner, timeout);
 
-            // Save the file on disk and naming
             std::string extension = (cfg.output == OutputFormat::TPTP) ? ".p" : ".txt";
             std::string fileName = outputDir + "/formula_" + std::to_string(generatedCount) + extension;
 
@@ -90,7 +90,7 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
             }
         }
         else {
-            std::cerr << "  [WARNING] Unable to generate a valid formula after " << MAX_ATTEMPTS << " attempts. Skipping.\n";
+            std::cerr << "Unable to generate a valid formula after " << MAX_ATTEMPTS << " attempts. Skipping.\n";
 
             ++failures;
             ++generatedCount;
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
     VampireRunner vampireRunner(args.vampirePath);
 
     if (args.verify && !vampireRunner.isAvailable()) {
-        std::cerr << "WARNING: Vampire not found at path: '" << args.vampirePath << "'.\n" << "Verification will return 'Error'.\n\n";
+        std::cerr << "WARNING Vampire not found at path: '" << args.vampirePath << "'.\n" << "Verification will return 'Error'.\n\n";
     }
 
     if (args.runBenchmarks) {

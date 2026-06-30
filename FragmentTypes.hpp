@@ -17,7 +17,7 @@ enum class OutputFormat { DEFAULT, TPTP };
 
 
 // BudgetRange 
-// Rappresenta un intervallo [min, max] per un tipo di nodo.
+// range [min, max] of node types.
 struct BudgetRange {
     int min = -1;
     int max = -1;
@@ -72,7 +72,7 @@ struct NodeBudget {
 };
 
 // GenConfig 
-// Configurazione completa per una sessione di generazione.
+// Complete configuration
 struct GenConfig {
     GenMode       mode = GenMode::FREE;
     int           depth = 3;

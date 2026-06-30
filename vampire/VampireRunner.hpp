@@ -9,6 +9,7 @@ public:
         double elapsedTime = 0.0;
         bool timedOut = false;
         bool runError = false;
+        long long generatedClauses = 0;
     };
 
     explicit VampireRunner(std::string vampirePath = "");
@@ -22,4 +23,5 @@ private:
     std::string vampirePath_;
     static std::string extractSZSStatus(const std::string& output);
     static double extractElapsedTime(const std::string& output);
+    static long long extractGeneratedClauses(const std::string& output);
 };

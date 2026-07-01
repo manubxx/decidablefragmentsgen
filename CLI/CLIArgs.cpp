@@ -11,6 +11,7 @@
 #include <fragments/fluted/FLvocab.hpp>
 #include <fragments/guarded/GFvocab.hpp>
 #include <fragments/unarynegation/UNvocab.hpp>
+#include <fragments/modal/Modalvocab.hpp> 
 
 namespace {
 
@@ -184,8 +185,8 @@ AppArgs parseArgs(int argc, char* argv[])
         std::string val = argv[++i];
 
         if (arg == "--fragment") {
-            if (val != "fo2" && val != "fluted" && val != "guarded" && val!="unaryneg")
-                throw std::invalid_argument("Unsupported fragment: '" + val + "' (allowed: fo2, fluted, guarded, unaryneg)");
+            if (val != "fo2" && val != "fluted" && val != "guarded" && val != "unaryneg" && val != "modal")
+                throw std::invalid_argument("Unsupported fragment: '" + val + "' (allowed: fo2, fluted, guarded, unaryneg, modal)");
             args.fragment = val; 
         }
 
@@ -219,6 +220,7 @@ AppArgs parseArgs(int argc, char* argv[])
         else if (args.fragment == "fluted") { newVocab = kVocabFL; }
         else if (args.fragment == "guarded") { newVocab = kVocabGF; }
         else if (args.fragment == "unaryneg") { newVocab = kVocabUN; }
+        else if (args.fragment == "modal") { newVocab = kVocabModal; }
     }
 
     // filter vocabulary

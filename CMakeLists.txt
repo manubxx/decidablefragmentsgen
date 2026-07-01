@@ -17,12 +17,14 @@ add_executable(DecidableFragmentsGen
     "fragments/guarded/GFvocab.hpp"
     "fragments/unarynegation/UnaryNegGenerator.cpp"
     "fragments/unarynegation/UNvocab.hpp"
+    "fragments/modal/ModalGenerator.cpp"
+    "fragments/modal/Modalvocab.hpp"
     "formulae/FormulaBuilder.cpp"
     "vampire/VampireRunner.cpp"
     "CLI/CLIPrinter.cpp"
     "CLI/CLIArgs.cpp"  
     "syntax/ASTNode.cpp"  
- "tests/benchmark.cpp")
+ "tests/benchmark.cpp" )
 
 
 target_compile_options(DecidableFragmentsGen PRIVATE

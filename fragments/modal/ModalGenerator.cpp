@@ -10,7 +10,7 @@ std::unique_ptr<AtomicNode> ModalGenerator::buildAtomic(const std::string& curre
     }
 
     if (propos.empty()) {
-        throw std::runtime_error("Vocabolario modale vuoto o senza proposizioni!");
+        throw std::runtime_error("Empty modal vocab");
     }
 
     int idx = randInt(0, static_cast<int>(propos.size()) - 1);
@@ -50,7 +50,7 @@ std::unique_ptr<ASTNode> ModalGenerator::generateSAT(int depth, int domainSize, 
     return build(depth, startVar(), budget);
 }
 
-std::unique_ptr<ASTNode> ModalGenerator::buildComponentUNSAT(int depth, BudgetState& budget) {
+std::unique_ptr<ASTNode> ModalGenerator::buildComponentUNSAT(int depth, BudgetState& budget) { 
    
     std::string x = startVar();
     std::string y = nextVar(x);

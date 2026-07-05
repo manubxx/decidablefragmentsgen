@@ -10,7 +10,7 @@
 // Core syntactic rule:
 //   ¬φ  is allowed  iff  φ has at most ONE free variable.
 // 
-//   `currFreeVars` is the set of variables currently free in the sub-context..
+//   `currFreeVars` is the set of variables currently free in the sub-context.
 
 
 class UnaryNegGenerator : public FormulaBuilder {

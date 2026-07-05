@@ -24,17 +24,13 @@ VampireRunner::VampireRunner(std::string vampirePath)
 #ifdef VAMPIRE_DEFAULT_PATH
     vampirePath_ = VAMPIRE_DEFAULT_PATH;
 #else
-    // Fall back to expecting "vampire" on the system PATH.
+    // fallback
     vampirePath_ = "vampire";
 #endif
 }
 
 // isAvailable
-bool VampireRunner::isAvailable() const
-{
-    // Ora controlla nativamente il filesystem POSIX
-    return std::filesystem::exists(vampirePath_);
-}
+bool VampireRunner::isAvailable() const { return std::filesystem::exists(vampirePath_);}
 
 // run
 VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int timeLimitSec, const std::string& extraFlags) const {
@@ -56,10 +52,8 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
     int hardTimeout = timeLimitSec + 2;
     int memoryLimit = 4096;
 
-    // INIETTIAMO EXTRA FLAGS NEL COMANDO DI SISTEMA
-    std::string cmd = "timeout " + std::to_string(hardTimeout) + " " + vampirePath_ +
-        " -t " + std::to_string(timeLimitSec) +
-        " -m " + std::to_string(memoryLimit) + " " + extraFlags + " " + inputFile + " 2>&1";
+    //extra flags
+    std::string cmd = "timeout " + std::to_string(hardTimeout) + " " + vampirePath_ +  " -t " + std::to_string(timeLimitSec) + " -m " + std::to_string(memoryLimit) + " " + extraFlags + " " + inputFile + " 2>&1";
 
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) {
@@ -96,7 +90,6 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
 }
 
 
-
 // extractSZSStatus
 std::string VampireRunner::extractSZSStatus(const std::string& output)
 {
@@ -104,8 +97,7 @@ std::string VampireRunner::extractSZSStatus(const std::string& output)
     auto pos = output.find(marker);
     if (pos == std::string::npos) {
         // Fallback 
-        if (output.find("Time limit") != std::string::npos ||
-            output.find("time limit") != std::string::npos)
+        if (output.find("Time limit") != std::string::npos || output.find("time limit") != std::string::npos)
             return "Timeout";
         return "Unknown";
     }

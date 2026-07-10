@@ -126,11 +126,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     applyDoubleDelta(budget.implies_left, originalBudget.implies_left, phiBudget.implies_left);
     applyDoubleDelta(budget.eq_left, originalBudget.eq_left, phiBudget.eq_left);
 
-    return std::make_unique<BinaryConnNode>(
-        Symbol::and_(),
-        std::move(phi),
-        std::make_unique<NegNode>(std::move(copy))
-    );
+    return std::make_unique<BinaryConnNode>(Symbol::and_(), std::move(phi), std::make_unique<NegNode>(std::move(copy)) );
 }
 
 // candidateTypes

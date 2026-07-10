@@ -28,26 +28,22 @@ std::unique_ptr<ASTNode> ModalGenerator::build(int depth, const std::string& cur
     if (chosen == SymbolType::EXISTS || chosen == SymbolType::FORALL) {
         std::string next = nextVar(currentVar);
 
-        auto r_atom = std::make_unique<AtomicNode>(Symbol::pred("R", 2) , std::vector<Symbol>{Symbol::var(currentVar), Symbol::var(next)}
-        );
-
+        auto r_atom = std::make_unique<AtomicNode>(Symbol::pred("R", 2) , std::vector<Symbol>{Symbol::var(currentVar), Symbol::var(next)} );
         auto phi = build(depth - 1, next, budget);
-
    
         if (chosen == SymbolType::EXISTS) { 
             auto and_node = std::make_unique<BinaryConnNode>(Symbol::and_(), std::move(r_atom), std::move(phi));
-            return std::make_unique<QuantifierNode>(Symbol::exists(), Symbol::var(next), std::move(and_node));
-        }
+            return std::make_unique<QuantifierNode>(Symbol::exists(), Symbol::var(next), std::move(and_node)); }
         else { 
             auto imp_node = std::make_unique<BinaryConnNode>(Symbol::implies(), std::move(r_atom), std::move(phi));
-            return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var(next), std::move(imp_node));
-        }
+            return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var(next), std::move(imp_node));  }
     }
+
     return FormulaBuilder::build(depth, currentVar, budget);
 }
 
 std::unique_ptr<ASTNode> ModalGenerator::generateSAT(int depth, int domainSize, BudgetState& budget) {
-    return build(depth, startVar(), budget);
+    return build(depth, startVar(), budget); 
 }
 
 std::unique_ptr<ASTNode> ModalGenerator::buildComponentUNSAT(int depth, BudgetState& budget) { 

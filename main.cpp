@@ -18,7 +18,7 @@ template <typename Gen>
 static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, const VampireRunner* runner, int timeout) {
     int failures = 0;
     int generatedCount = 0;
-    const int MAX_ATTEMPTS = 50;
+    const int MAX_ATTEMPTS = 200;
 
     //output directory
     std::string outputDir = "generated_output";
@@ -91,6 +91,12 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
             }
         }
         else {
+            std::string discardedDir = "tests/discardedformulas";
+            fs::create_directories(discardedDir);
+            std::ofstream errOut(discardedDir + "/failed_gen_" + std::to_string(generatedCount) + ".p");
+            errOut << formula; 
+            errOut.close();
+
             std::cerr << "Unable to generate a valid formula after " << MAX_ATTEMPTS << " attempts. Skipping.\n";
 
             ++failures;

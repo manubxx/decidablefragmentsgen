@@ -17,6 +17,9 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
     fs::create_directories(reportDir);
     std::string reportPath = reportDir + "/report_benchmark_casc.csv";
 
+    std::string discardedDir = "tests/discardedformulas";
+    fs::create_directories(discardedDir);
+
     std::cout << "STARTING BENCHMARK CAMPAIGN (CASC MODE)\n";
     std::ofstream csv(reportPath);
 
@@ -42,6 +45,11 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
             std::cout << "Analyzing: [" << datasetName << "] " << fileName << " -> ";
 
             auto res = runner.run(formulaStr, args.vampireTimeout, "--mode casc");
+
+            if (res.timedOut || res.runError) {
+                fs::path p(entry.path());
+                fs::copy_file(p, fs::path(discardedDir) / p.filename(), fs::copy_options::overwrite_existing);
+            }
 
             std::cout << "[" << res.status << "] Time: " << res.elapsedTime
                 << "s | Clauses: " << res.generatedClauses

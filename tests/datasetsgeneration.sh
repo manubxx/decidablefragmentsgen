@@ -1,93 +1,52 @@
 #!/bin/bash
 
-
 EXEC="../build/DecidableFragmentsGen" 
-
 BASE_DIR="./ff_datasets"
-
-# problems for each instance
 COUNT=5
 
-mkdir -p "$BASE_DIR/ffbaseescalation"
+rm -rf "$BASE_DIR"
+mkdir -p "$BASE_DIR/ffbasescalation"
 mkdir -p "$BASE_DIR/ffhigharity"
-mkdir -p "$BASE_DIR/ffedgecases"
+mkdir -p "$BASE_DIR/ffsat"
+mkdir -p "$BASE_DIR/ffunsat"
+mkdir -p "$BASE_DIR/fsat"
 
-echo " START GENERATION DATASET FLUTED (UNSAT)"
+echo "GENERATING DATASET: ff_datasets"
 
-echo "GENERATING DATASET 1: Base Escalation"
 
-for depth in {2..8}; do
-    preds_count=5 
-   
-    arity=$(( (depth / 2) + 1 ))
+$EXEC --fragment fluted --mode unsat --output tptp --count 5 --depth 8 --preds "5/3" \
+    > "$BASE_DIR/ffbasescalation/test_debug.p"
 
-    echo "Base: Depth=$depth, Arity=$arity"
-    $EXEC \
-        --fragment fluted \
-        --mode unsat \
-        --output tptp \
-        --count $COUNT \
-        --depth $depth \
-        --preds "$preds_count/$arity" \
-        > "$BASE_DIR/ffbaseescalation/ff_baseesc_d${depth}_a${arity}.p"
-done
-
-echo "GENERATING DATASET 2: High Arity"
 
 fixed_depth=4
-preds_count=4
-
 for arity in 5 8 10 12 15; do
-    echo "High Arity: Depth=$fixed_depth, Arity=$arity"
-    $EXEC \
-        --fragment fluted \
-        --mode unsat \
-        --output tptp \
-        --count $COUNT \
-        --depth $fixed_depth \
-        --preds "$preds_count/$arity" \
-        > "$BASE_DIR/ffhigharity/ff_higharity_a${arity}.p"
+    $EXEC --fragment fluted --mode unsat --output tptp --count $COUNT --depth $fixed_depth --preds "4/$arity" > "$BASE_DIR/ffhigharity/higharity_a${arity}.p"
 done
 
-echo "GENERATING DATASET 3: Edge Cases"
 
-echo "Edge Case: (No ORs, max ANDs)"
-$EXEC \
-    --fragment fluted \
-    --mode unsat \
-    --output tptp \
-    --count $COUNT \
-    --depth 12 \
-    --preds "5/2" \
-    --or "0:0" \
-    --and "5:15" \
-    --implies "2:5" \
-    > "$BASE_DIR/ffedgecases/ff_deepnarrow.p" 
-
-echo "Edge Case: (max ORs)"
-$EXEC \
-    --fragment fluted \
-    --mode unsat \
-    --output tptp \
-    --count $COUNT \
-    --depth 6 \
-    --preds "5/3" \
-    --or "15:25" \
-    > "$BASE_DIR/ffedgecases/ff_wide.p"
-
-echo "Edge Case: NNF"
-$EXEC \
-    --fragment fluted \
-    --mode unsat \
-    --output tptp \
-    --count $COUNT \
-    --depth 6 \
-    --preds "4/4" \
-    --transform nnf \
-    > "$BASE_DIR/ffedgecases/ff_edge_nnf.p"
+for depth in {4..10}; do
+    $EXEC --fragment fluted --mode sat --output tptp --count $COUNT --depth $depth --preds "5/2" > "$BASE_DIR/ffsat/sat_d${depth}.p"
+done
 
 
-echo "cleaning file"
-rm -rf ./generated_output
+for arity in 4 6; do
+    $EXEC --fragment fluted --mode unsat --output tptp --count $COUNT --depth 12 --preds "10/$arity" > "$BASE_DIR/ffunsat/unsat_a${arity}_d12.p"
+done
 
-echo " DONE"
+
+$EXEC --fragment fluted --mode free --output tptp --count 5 --depth 15 --preds "8/3" > "$BASE_DIR/fsat/fffree.p"
+
+
+$EXEC --fragment fluted --mode unsat --output tptp --count 5 --depth 12 \
+    --preds "5/3" --exists "2" --forall "2" --or "2" --and "1" \
+    > "$BASE_DIR/ffunsat/ffquantifiers.p"
+
+ì
+$EXEC --fragment fluted --mode unsat --output tptp --count 5 --depth 10 \
+    --preds "4/2" --or "2" --and "3" \
+    > "$BASE_DIR/ffunsat/ffboolean.p"
+
+$EXEC --fragment fluted --mode unsat --output tptp --count 5 --depth 8 \
+    --preds "3/3" --eq "2" \
+    > "$BASE_DIR/ffunsat/ffequal.p"
+echo "ff_dataset generated in $BASE_DIR"

@@ -14,24 +14,7 @@
 
 
 static std::string sanitizeTPTP(const std::string& raw) {
-    std::stringstream ss(raw);
-    std::stringstream clean;
-    std::string line;
-    while (std::getline(ss, line)) {
-      
-        std::string trimmed = line;
-        trimmed.erase(0, trimmed.find_first_not_of(" \t\r\n"));
-
-
-        if (trimmed.empty() ||
-            trimmed.rfind("%", 0) == 0 ||
-            trimmed.rfind("fof", 0) == 0 ||
-            trimmed.rfind("cnf", 0) == 0 ||
-            trimmed.rfind("include", 0) == 0) {
-            clean << line << "\n";
-        }
-    }
-    return clean.str();
+    return raw;
 }
 
 // Constructor
@@ -50,7 +33,12 @@ VampireRunner::VampireRunner(std::string vampirePath)
 }
 
 // isAvailable
-bool VampireRunner::isAvailable() const { return std::filesystem::exists(vampirePath_); }
+bool VampireRunner::isAvailable() const {
+    if (vampirePath_ == "vampire") {
+        return true;
+    }
+    return std::filesystem::exists(vampirePath_);
+}
 
 // run
 VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int timeLimitSec, const std::string& extraFlags) const {
@@ -77,9 +65,9 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
     int hardTimeout = timeLimitSec + 2;
     int memoryLimit = 4096;
 
-    // Comando per Vampire
-    std::string cmd = "timeout " + std::to_string(hardTimeout) + " " + vampirePath_ + " -t " + std::to_string(timeLimitSec) + " -m " + std::to_string(memoryLimit) + " " + extraFlags + " " + inputFile + " 2>&1";
-
+    // Vampire command
+    std::string cmd = vampirePath_ + " --mode casc --time_limit " + std::to_string(timeLimitSec) + " " + inputFile + " 2>&1";
+   
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) {
         std::filesystem::remove(inputFile);
@@ -94,6 +82,7 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
         result.rawOutput += buffer.data();
     }
     pclose(pipe);
+   
 
     std::filesystem::remove(inputFile);
 

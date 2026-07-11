@@ -62,7 +62,7 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
             ++generatedCount;
 
           
-            std::cout << "\nFormula " << generatedCount << " \n";
+            std::cout << "\n% Formula " << generatedCount << " \n";
             std::cout << "% ATTEMPTS: " << attempts << "\n";
             std::cout << formula << "\n";
 

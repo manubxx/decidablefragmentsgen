@@ -1,36 +1,36 @@
 % GENERATION CONFIGURATION 
 %Fragment: Fluted
 %Mode: SAT
-%Depth: 4 | Count: 5 | Seed: 3355527352
+%Depth: 4 | Count: 5 | Seed: 3949814739
 %Domain Size: 0
 %Vocabulary Size: 5 predicates.
-% Formula 1
+
+Formula 1 
 % ATTEMPTS: 1
 fof(f,axiom,
-    (~(? [X1] : (((? [X2] : b2(X1,X2)) => (? [X2] : b1(X1,X2))) & ((? [X2] : b5(X1,X2)) | (? [X2] : b3(X1,X2))))))
+    ((? [X1] : (((? [X2] : b4(X1,X2)) & (? [X2] : b5(X1,X2))) => ((! [X2] : b1(X1,X2)) | (? [X2] : b1(X1,X2))))) & (? [X1] : (? [X2] : (b3(X1,X2) | b5(X1,X2)))))
 ).
 
-% Formula 2
+Formula 2 
 % ATTEMPTS: 1
 fof(f,axiom,
-    (~(! [X1] : (~(~(! [X2] : b5(X1,X2))))))
+    (? [X1] : ((((! [X2] : b3(X1,X2)) & (! [X2] : b2(X1,X2))) & (~(! [X2] : b5(X1,X2)))) | (((! [X2] : b5(X1,X2)) & (? [X2] : b2(X1,X2))) & ((! [X2] : b5(X1,X2)) & (! [X2] : b1(X1,X2))))))
 ).
 
-% Formula 3
+Formula 3 
 % ATTEMPTS: 1
 fof(f,axiom,
-    ((? [X1] : ((~(! [X2] : b3(X1,X2))) & ((? [X2] : b1(X1,X2)) & (? [X2] : b2(X1,X2))))) | (? [X1] : ((~(! [X2] : b5(X1,X2))) & (? [X2] : b1(X1,X2)))))
+    (~((! [X1] : ((? [X2] : b4(X1,X2)) | (! [X2] : b2(X1,X2)))) & (? [X1] : ((? [X2] : b4(X1,X2)) => (! [X2] : b1(X1,X2))))))
 ).
 
-% Formula 4
+Formula 4 
 % ATTEMPTS: 1
 fof(f,axiom,
-    ((? [X1] : (~(~(? [X2] : b1(X1,X2))))) => (~(? [X1] : (? [X2] : b3(X1,X2)))))
+    (~((? [X1] : ((! [X2] : b1(X1,X2)) | (? [X2] : b1(X1,X2)))) & ((! [X1] : (! [X2] : b4(X1,X2))) | ((! [X1] : (! [X2] : b4(X1,X2))) | (! [X1] : (! [X2] : b1(X1,X2)))))))
 ).
 
-% Formula 5
+Formula 5 
 % ATTEMPTS: 1
 fof(f,axiom,
-    ((! [X1] : (((! [X2] : b4(X1,X2)) => (? [X2] : b3(X1,X2))) => ((! [X2] : b1(X1,X2)) & (? [X2] : b1(X1,X2))))) => (? [X1] : (? [X2] : X1 = X2)))
+    ((? [X1] : (((? [X2] : b4(X1,X2)) => (? [X2] : b5(X1,X2))) | ((? [X2] : b5(X1,X2)) & (! [X2] : b4(X1,X2))))) | ((((! [X1] : (! [X2] : b1(X1,X2))) | (! [X1] : (! [X2] : b5(X1,X2)))) | (~(? [X1] : (? [X2] : b3(X1,X2))))) => (((! [X1] : (! [X2] : b5(X1,X2))) & (? [X1] : (? [X2] : b1(X1,X2)))) => (? [X1] : (! [X2] : b5(X1,X2))))))
 ).
-

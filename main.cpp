@@ -20,7 +20,6 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
     int generatedCount = 0;
     const int MAX_ATTEMPTS = 200;
 
-    //output directory
     std::string outputDir = "generated_output";
     fs::create_directories(outputDir);
 
@@ -28,48 +27,33 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
         int attempts = 0;
         bool formulaAccepted = false;
         std::string formula;
+        std::string lastError = "Unknown error";
 
         while (!formulaAccepted && attempts < MAX_ATTEMPTS) {
             ++attempts;
-
             try {
                 formula = gen.generateFormatted(cfg);
 
+              
                 if (!verify || !runner || cfg.output != OutputFormat::TPTP) {
                     formulaAccepted = true;
                     break;
                 }
 
                 auto res = runner->run(formula, timeout);
-
                 if (res.runError) {
-                    std::cerr << "VAMPIRE ERROR" << res.rawOutput << "\n";
+                    lastError = "Vampire Error: " + res.rawOutput;
                     continue;
                 }
 
-                if (cfg.mode == GenMode::SAT || cfg.mode == GenMode::SATBUILD) {
-                    if (res.status == "Satisfiable" || res.status == "CounterSatisfiable") {
-                        formulaAccepted = true;
-
-                        if (attempts > 1) {
-                            std::cout << "  [INFO] SAT formula found after " << attempts << " attempts (Discarded: " << (attempts - 1) << ").\n";
-                        }
-                    }
-                }
-                else if (cfg.mode == GenMode::UNSAT) {
-                    if (res.status == "Unsatisfiable" || res.status == "Theorem" || res.status == "Contradiction") {
-                        formulaAccepted = true;
-
-                        if (attempts > 1) {
-                            std::cout << "  [INFO] UNSAT formula found after " << attempts << " attempts (Discarded: " << (attempts - 1) << ").\n";
-                        }
-                    }
-                }
-                else {
+                if ((cfg.mode == GenMode::SAT && (res.status == "Satisfiable" || res.status == "CounterSatisfiable")) ||
+                    (cfg.mode == GenMode::UNSAT && (res.status == "Unsatisfiable" || res.status == "Theorem" || res.status == "Contradiction")) ||
+                    (cfg.mode == GenMode::FREE)) {
                     formulaAccepted = true;
                 }
             }
             catch (const std::exception& e) {
+                lastError = e.what();
                 continue;
             }
         }
@@ -77,14 +61,14 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
         if (formulaAccepted) {
             ++generatedCount;
 
-            std::string tptpHeader = "% ATTEMPTS: " + std::to_string(attempts) + "\n";
-            formula = tptpHeader + formula;
-            printFormula(generatedCount, cfg, formula, verify, runner, timeout);
+          
+            std::cout << "\nFormula " << generatedCount << " \n";
+            std::cout << "% ATTEMPTS: " << attempts << "\n";
+            std::cout << formula << "\n";
 
+           
             std::string extension = (cfg.output == OutputFormat::TPTP) ? ".p" : ".txt";
-            std::string fileName = outputDir + "/formula_" + std::to_string(generatedCount) + extension;
-
-            std::ofstream outFile(fileName);
+            std::ofstream outFile(outputDir + "/formula_" + std::to_string(generatedCount) + extension);
             if (outFile) {
                 outFile << formula;
                 outFile.close();
@@ -94,16 +78,18 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
             std::string discardedDir = "tests/discardedformulas";
             fs::create_directories(discardedDir);
             std::ofstream errOut(discardedDir + "/failed_gen_" + std::to_string(generatedCount) + ".p");
-            errOut << formula; 
+
+            errOut << "% GENERATION FAILED\n";
+            errOut << "% Reason: " << lastError << "\n";
+            errOut << "% Attempts: " << attempts << "\n";
+            errOut << "% Configuration: Depth=" << cfg.depth << ", ArityFilter=" << cfg.arityFilter << "\n";
             errOut.close();
 
-            std::cerr << "Unable to generate a valid formula after " << MAX_ATTEMPTS << " attempts. Skipping.\n";
-
+            std::cerr << "Failed to generate formula " << generatedCount << ". Reason: " << lastError << "\n";
             ++failures;
             ++generatedCount;
         }
     }
-
     return failures;
 }
 

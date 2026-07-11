@@ -13,6 +13,27 @@
 #include <regex>
 
 
+static std::string sanitizeTPTP(const std::string& raw) {
+    std::stringstream ss(raw);
+    std::stringstream clean;
+    std::string line;
+    while (std::getline(ss, line)) {
+      
+        std::string trimmed = line;
+        trimmed.erase(0, trimmed.find_first_not_of(" \t\r\n"));
+
+
+        if (trimmed.empty() ||
+            trimmed.rfind("%", 0) == 0 ||
+            trimmed.rfind("fof", 0) == 0 ||
+            trimmed.rfind("cnf", 0) == 0 ||
+            trimmed.rfind("include", 0) == 0) {
+            clean << line << "\n";
+        }
+    }
+    return clean.str();
+}
+
 // Constructor
 VampireRunner::VampireRunner(std::string vampirePath)
 {
@@ -24,17 +45,19 @@ VampireRunner::VampireRunner(std::string vampirePath)
 #ifdef VAMPIRE_DEFAULT_PATH
     vampirePath_ = VAMPIRE_DEFAULT_PATH;
 #else
-    // fallback
     vampirePath_ = "vampire";
 #endif
 }
 
 // isAvailable
-bool VampireRunner::isAvailable() const { return std::filesystem::exists(vampirePath_);}
+bool VampireRunner::isAvailable() const { return std::filesystem::exists(vampirePath_); }
 
 // run
 VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int timeLimitSec, const std::string& extraFlags) const {
     Result result;
+
+  
+    std::string cleanFormula = sanitizeTPTP(tptpFormula);
 
     static std::atomic<int> fileCounter{ 0 };
     std::string inputFile = "temp_vampire_" + std::to_string(getpid()) + "_" + std::to_string(++fileCounter) + ".p";
@@ -46,14 +69,16 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
         result.rawOutput = "Failed to create temporary file for Vampire.";
         return result;
     }
-    out << tptpFormula;
+
+    // Scriviamo la versione pulita
+    out << cleanFormula;
     out.close();
 
     int hardTimeout = timeLimitSec + 2;
     int memoryLimit = 4096;
 
-    //extra flags
-    std::string cmd = "timeout " + std::to_string(hardTimeout) + " " + vampirePath_ +  " -t " + std::to_string(timeLimitSec) + " -m " + std::to_string(memoryLimit) + " " + extraFlags + " " + inputFile + " 2>&1";
+    // Comando per Vampire
+    std::string cmd = "timeout " + std::to_string(hardTimeout) + " " + vampirePath_ + " -t " + std::to_string(timeLimitSec) + " -m " + std::to_string(memoryLimit) + " " + extraFlags + " " + inputFile + " 2>&1";
 
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) {
@@ -89,14 +114,12 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
     return result;
 }
 
-
 // extractSZSStatus
 std::string VampireRunner::extractSZSStatus(const std::string& output)
 {
     const std::string marker = "SZS status ";
     auto pos = output.find(marker);
     if (pos == std::string::npos) {
-        // Fallback 
         if (output.find("Time limit") != std::string::npos || output.find("time limit") != std::string::npos)
             return "Timeout";
         return "Unknown";
@@ -127,12 +150,10 @@ double VampireRunner::extractElapsedTime(const std::string& output)
     catch (...) {
         return 0.0;
     }
-
 }
 
 long long VampireRunner::extractGeneratedClauses(const std::string& output) {
     std::smatch match;
-   
     std::regex reg(R"((\d+)\s+generated clauses)");
 
     if (std::regex_search(output, match, reg)) {
@@ -143,5 +164,5 @@ long long VampireRunner::extractGeneratedClauses(const std::string& output) {
             return 0;
         }
     }
-    return 0; 
+    return 0;
 }

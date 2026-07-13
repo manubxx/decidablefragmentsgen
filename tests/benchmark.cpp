@@ -12,18 +12,17 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
         return;
     }
 
-   
     std::string reportDir = "benchmarkreport";
     fs::create_directories(reportDir);
     std::string reportPath = reportDir + "/report_benchmark_casc.csv";
 
-    std::string discardedDir = "tests/discardedformulas";
+    std::string discardedDir = reportDir + "/discarded_formulas";
     fs::create_directories(discardedDir);
 
     std::cout << "STARTING BENCHMARK CAMPAIGN (CASC MODE)\n";
     std::ofstream csv(reportPath);
 
-    csv << "Dataset,FileName,SZS_Status,Time_Elapsed(s),Generated_Clauses,Generation_Attempts\n";
+    csv << "Dataset,FileName,SZS_Status,Time_Elapsed(s),Generated_Clauses,Generation_Attempts,Formula_Length\n";
 
     for (const auto& entry : fs::recursive_directory_iterator(args.benchmarkPath)) {
         if (entry.is_regular_file() && entry.path().extension() == ".p") {
@@ -32,7 +31,9 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
             std::string formulaStr((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
             file.close();
 
-            int attempts = 1; 
+            size_t formulaLength = formulaStr.length();
+
+            int attempts = 1;
             std::smatch match;
             std::regex attemptsRegex(R"(% ATTEMPTS:\s*(\d+))");
             if (std::regex_search(formulaStr, match, attemptsRegex)) {
@@ -46,24 +47,26 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
 
             auto res = runner.run(formulaStr, args.vampireTimeout, "--mode casc");
 
-            if (res.timedOut || res.runError) {
+            if (res.timedOut || res.runError || res.status == "Timeout" || res.status == "Error") {
                 fs::path p(entry.path());
-                fs::copy_file(p, fs::path(discardedDir) / p.filename(), fs::copy_options::overwrite_existing);
+                std::string safeDiscardName = datasetName + "_" + fileName;
+                fs::copy_file(p, fs::path(discardedDir) / safeDiscardName, fs::copy_options::overwrite_existing);
             }
 
             std::cout << "[" << res.status << "] Time: " << res.elapsedTime
-                << "s | Clauses: " << res.generatedClauses
+                << "s | Length: " << formulaLength
                 << " | Attempts: " << attempts << "\n";
 
-     
             csv << datasetName << ","
                 << fileName << ","
                 << res.status << ","
                 << res.elapsedTime << ","
                 << res.generatedClauses << ","
-                << attempts << "\n";
+                << attempts << ","
+                << formulaLength << "\n";
         }
     }
     csv.close();
-    std::cout << "BENCHMARK DONE. Report saved in " << reportPath << "\n";
+    std::cout << "\nBENCHMARK DONE. Report saved in " << reportPath << "\n";
+    std::cout << "Discarded formulas (Timeout/Errors) saved in " << discardedDir << "\n";
 }

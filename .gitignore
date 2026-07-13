@@ -14,3 +14,9 @@
 # other system files or configurations
 CMakeSettings.json
 CompilerIdCXX/
+
+ff_datasets/
+
+benchmarkreport/
+tests/discardedformulas/
+*.csv

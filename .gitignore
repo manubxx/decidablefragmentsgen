@@ -16,7 +16,7 @@ CMakeSettings.json
 CompilerIdCXX/
 
 ff_datasets/
-
+gf_datasets/
 benchmarkreport/
 tests/discardedformulas/
 *.csv

@@ -6,14 +6,21 @@
 
 
 //Constructor
+// Constructor
 GuardedGenerator::GuardedGenerator(std::vector<PredInfo> vocab, unsigned seed) : FormulaBuilder(seed), vocab_(std::move(vocab))
 {
     if (vocab_.empty())
         throw std::invalid_argument("GuardedGenerator: empty vocabulary");
 
-    for (const auto& p : vocab_)
+    for (const auto& p : vocab_) {
         if (p.arity < 1)
             throw std::invalid_argument("GuardedGenerator: predicate '" + p.name + "' has arity < 1 (not allowed)");
+    }
+
+    int limit = std::min(static_cast<int>(vocab_.size()), 8);
+    for (int i = 0; i < limit; ++i) {
+        vocab_[i].arity = i + 1;
+    }
 }
 
 //  nextVar

@@ -16,7 +16,14 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
     fs::create_directories(reportDir);
     std::string reportPath = reportDir + "/report_benchmark_casc.csv";
 
-    std::string discardedDir = reportDir + "/discarded_formulas";
+    fs::path rootPath(args.benchmarkPath);
+    std::string discardedDir;
+    if (rootPath.filename() == "timeout_cand") {
+        discardedDir = args.benchmarkPath;
+    }
+    else {
+        discardedDir = args.benchmarkPath + "/timeout_cand";
+    }
     fs::create_directories(discardedDir);
 
     std::cout << "STARTING BENCHMARK CAMPAIGN (CASC MODE)\n";
@@ -41,6 +48,9 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
             }
 
             std::string datasetName = entry.path().parent_path().filename().string();
+            if (datasetName == "timeout_cand" && rootPath.filename() != "timeout_cand") {
+                continue;
+            }
             std::string fileName = entry.path().filename().string();
 
             std::cout << "Analyzing: [" << datasetName << "] " << fileName << " -> ";

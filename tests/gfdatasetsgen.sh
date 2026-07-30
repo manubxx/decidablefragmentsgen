@@ -4,19 +4,17 @@ BASE_DIR="./gf_datasets"
 COUNT=30 
 
 echo "GENERATING GF DATASETS (COUNT=$COUNT)"
-rm -rf "$BASE_DIR"
 
-mkdir -p "$BASE_DIR/depthscaling"
-mkdir -p "$BASE_DIR/arityscaling"
-mkdir -p "$BASE_DIR/budgetlimits"
-mkdir -p "$BASE_DIR/largescaling"
+for dir in depthscaling arityscaling budgetlimits largescaling timeout_cand; do
+    rm -rf "$BASE_DIR/$dir"
+    mkdir -p "$BASE_DIR/$dir"
+done
 
 MODES=("unsat" "sat" "free")
-LARGE_MODES=("unsat" "free")
-
+LARGE_MODES=("unsat" "free") 
 
 for mode in "${MODES[@]}"; do
-    for depth in 3 5 7 10; do
+    for depth in 3 5 7 9; do
         for i in $(seq 1 $COUNT); do
             $EXEC --fragment guarded --mode $mode --output tptp --count 1 --depth $depth --preds "8/6" \
                 > "$BASE_DIR/depthscaling/${mode}_d${depth}_${i}.p"
@@ -24,7 +22,7 @@ for mode in "${MODES[@]}"; do
     done
 done
 
-
++
 for mode in "${MODES[@]}"; do
     for preds in "3/2" "4/3" "5/4" "6/5"; do
         safe_preds=$(echo $preds | tr '/' '_')
@@ -47,7 +45,7 @@ done
 
 
 for mode in "${LARGE_MODES[@]}"; do
-    for depth in 12 15 18; do
+    for depth in 10 12 14; do
         for i in $(seq 1 $COUNT); do
             $EXEC --fragment guarded --mode $mode --output tptp --count 1 --depth $depth --preds "10/8" \
                 > "$BASE_DIR/largescaling/${mode}_d${depth}_${i}.p"
@@ -55,4 +53,4 @@ for mode in "${LARGE_MODES[@]}"; do
     done
 done
 
-echo "DONE. Saved in  $BASE_DIR."
+echo "DONE. Saved in $BASE_DIR."

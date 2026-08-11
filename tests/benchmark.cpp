@@ -4,6 +4,11 @@
 #include <filesystem>
 #include <regex>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#include <regex>
+#pragma GCC diagnostic pop
+
 namespace fs = std::filesystem;
 
 void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
@@ -76,7 +81,43 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
                 << formulaLength << "\n";
         }
     }
+
     csv.close();
     std::cout << "\nBENCHMARK DONE. Report saved in " << reportPath << "\n";
     std::cout << "Discarded formulas (Timeout/Errors) saved in " << discardedDir << "\n";
+}
+
+
+void runTimeoutAnalysisNative(const AppArgs& baseArgs, const VampireRunner& runner) {
+    std::string targetDir = baseArgs.benchmarkPath.empty() ?
+        "./" + baseArgs.fragment + "_datasets/timeout_cand" :
+        baseArgs.benchmarkPath;
+
+    std::string reportDir = "benchmarkreport";
+
+    if (!fs::exists(targetDir) || fs::is_empty(targetDir)) {
+        std::cout << "No formula found in " << targetDir << "\n";
+        return;
+    }
+
+    std::vector<int> timeouts = { 30, 60, 120 };
+
+    for (int t : timeouts) {
+        std::cout << "\n Timeout Analysis (Calibration): " << t << "s ===\n";
+
+        AppArgs currentArgs = baseArgs;
+        currentArgs.benchmarkPath = targetDir;
+        currentArgs.vampireTimeout = t;
+
+        runDatasetBenchmarks(currentArgs, runner);
+
+        std::string defaultReport = reportDir + "/report_benchmark_casc.csv";
+
+        std::string targetReport = reportDir + "/report_" + baseArgs.fragment + "_timeout_" + std::to_string(t) + "s.csv";
+
+        if (fs::exists(defaultReport)) {
+            fs::rename(defaultReport, targetReport);
+            std::cout << "DONE. Salvato in: " << targetReport << "\n";
+        }
+    }
 }

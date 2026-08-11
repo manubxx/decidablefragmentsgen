@@ -177,6 +177,15 @@ AppArgs parseArgs(int argc, char* argv[])
             continue;
         }
 
+        if (arg == "--generate-datasets") {
+            args.generateDatasets = true;
+            continue;
+        }
+        if (arg == "--run-timeout-analysis") {
+            args.runTimeoutAnalysis = true;
+            continue;
+        }
+
         // Safety: next commands require an argument
         if (i + 1 >= argc) {
             throw std::invalid_argument("Flag '" + arg + "' requires an argument");

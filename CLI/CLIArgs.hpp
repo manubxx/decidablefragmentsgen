@@ -18,6 +18,9 @@ struct AppArgs {
     // Testing
     bool runBenchmarks = false;
     std::string benchmarkPath = "";
+    bool generateDatasets = false;
+    bool runTimeoutAnalysis = false;
+
 
 };
 struct HelpRequest {};   // --help guard

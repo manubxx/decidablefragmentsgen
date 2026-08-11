@@ -8,6 +8,7 @@
 #include "fragments/modal/ModalGenerator.hpp"
 #include "vampire/VampireRunner.hpp"
 #include "tests/benchmark.hpp" 
+#include "tests/datasetgen.hpp"
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -110,6 +111,22 @@ int main(int argc, char* argv[]) {
 
     if (args.verify && !vampireRunner.isAvailable()) {
         std::cerr << "WARNING Vampire not found at path: '" << args.vampirePath << "'.\n" << "Verification will return 'Error'.\n\n";
+    }
+
+    if (args.runTimeoutAnalysis) {
+        runTimeoutAnalysisNative(args, vampireRunner);
+        return 0;
+    }
+
+    if (args.generateDatasets) {
+        if (args.fragment == "fluted") {
+            FlutedGenerator gen(args.cfg.vocab, args.seed);
+            generateDatasetsNative(gen, args.fragment, args.count);
+        }
+        else {
+            std::cout << "Generation not defined for the fragment:" << args.fragment << "\n";
+        }
+        return 0; 
     }
 
     if (args.runBenchmarks) {

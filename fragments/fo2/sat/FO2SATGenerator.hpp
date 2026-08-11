@@ -33,9 +33,9 @@ private:
 
     
     static Variable varFromName(const std::string& name) {
-        return (name == "v1" || name == "0") ? 0 : 1;
+        return (name == "V1" || name == "v1" || name == "0") ? 0 : 1;
     }
     static std::string nameFromVar(Variable v) {
-        return v == 0 ? "v1" : "v2";
+        return v == 0 ? "V1" : "V2";
     }
 };

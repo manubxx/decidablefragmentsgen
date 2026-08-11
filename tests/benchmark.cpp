@@ -22,12 +22,18 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
     std::string reportPath = reportDir + "/report_benchmark_casc.csv";
 
     fs::path rootPath(args.benchmarkPath);
+
     std::string discardedDir;
+    std::string unknownDir;
+
+    // Inizializza entrambe le cartelle per lo smistamento
     if (rootPath.filename() == "timeout_cand") {
         discardedDir = args.benchmarkPath;
     }
     else {
         discardedDir = args.benchmarkPath + "/timeout_cand";
+        unknownDir = args.benchmarkPath + "/unknown_cand";
+        fs::create_directories(unknownDir);
     }
     fs::create_directories(discardedDir);
 
@@ -53,7 +59,9 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
             }
 
             std::string datasetName = entry.path().parent_path().filename().string();
-            if (datasetName == "timeout_cand" && rootPath.filename() != "timeout_cand") {
+
+            // Salta entrambe le cartelle di scarto durante l'iterazione principale
+            if ((datasetName == "timeout_cand" || datasetName == "unknown_cand") && rootPath.filename() != datasetName) {
                 continue;
             }
             std::string fileName = entry.path().filename().string();
@@ -62,10 +70,15 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
 
             auto res = runner.run(formulaStr, args.vampireTimeout, "--mode casc");
 
+            fs::path p(entry.path());
+            std::string safeDiscardName = datasetName + "_" + fileName;
+
+            // LOGICA DI SMISTAMENTO
             if (res.timedOut || res.runError || res.status == "Timeout" || res.status == "Error") {
-                fs::path p(entry.path());
-                std::string safeDiscardName = datasetName + "_" + fileName;
                 fs::copy_file(p, fs::path(discardedDir) / safeDiscardName, fs::copy_options::overwrite_existing);
+            }
+            else if (res.status == "Unknown" && !unknownDir.empty()) {
+                fs::copy_file(p, fs::path(unknownDir) / safeDiscardName, fs::copy_options::overwrite_existing);
             }
 
             std::cout << "[" << res.status << "] Time: " << res.elapsedTime
@@ -85,8 +98,10 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
     csv.close();
     std::cout << "\nBENCHMARK DONE. Report saved in " << reportPath << "\n";
     std::cout << "Discarded formulas (Timeout/Errors) saved in " << discardedDir << "\n";
+    if (!unknownDir.empty()) {
+        std::cout << "Unknown formulas saved in " << unknownDir << "\n";
+    }
 }
-
 
 void runTimeoutAnalysisNative(const AppArgs& baseArgs, const VampireRunner& runner) {
     std::string targetDir = baseArgs.benchmarkPath.empty() ?

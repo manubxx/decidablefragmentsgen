@@ -123,10 +123,16 @@ int main(int argc, char* argv[]) {
             FlutedGenerator gen(args.cfg.vocab, args.seed);
             generateDatasetsNative(gen, args.fragment, args.count);
         }
+        else if (args.fragment == "fo2") {
+           
+            FO2Generator gen(args.cfg.vocab, args.seed);
+
+            generateDatasetsNative<FO2Generator>(gen, args.fragment, args.count);
+        }
         else {
             std::cout << "Generation not defined for the fragment:" << args.fragment << "\n";
         }
-        return 0; 
+        return 0;
     }
 
     if (args.runBenchmarks) {

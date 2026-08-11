@@ -27,7 +27,10 @@ add_executable(DecidableFragmentsGen
     "CLI/CLIPrinter.cpp"
     "CLI/CLIArgs.cpp"  
     "syntax/ASTNode.cpp"  
- "tests/benchmark.cpp" )
+ "tests/benchmark.hpp" 
+ "tests/benchmark.cpp"
+"tests/datasetgen.hpp"
+"tests/datasetgen.cpp")
 
 
 target_compile_options(DecidableFragmentsGen PRIVATE

@@ -11,7 +11,7 @@ private:
 
     
     static Variable varFromName(const std::string& name) {
-        return (name == "v1" || name == "0") ? 0 : 1;
+        return (name == "V1" || name == "v1" || name == "0") ? 0 : 1;
     }
 
 public:

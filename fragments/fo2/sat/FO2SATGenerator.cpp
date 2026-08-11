@@ -3,7 +3,7 @@
 #include <numeric>
 #include <algorithm>
 #include <array>
-
+#include <unordered_set>
 
 std::vector<Symbol> FO2SATGenerator::generateFO2Args(int arity, Variable currentVar, Variable other) {
     std::vector<Symbol> args;
@@ -27,43 +27,50 @@ Targets FO2SATGenerator::complementTargets(int domainSize, const Targets& target
     Targets complement;
     if (targets.empty()) return complement;
 
+    const size_t MAX_TARGETS = 1000; // Il tuo valore perfetto
+
     Variable active = currentVar;
     Variable other = 1 - currentVar;
 
-   
     int referenceValue = targets[0][other];
     bool isSingleRowC = true;
     for (const auto& a : targets) {
         if (a[other] != referenceValue) {
-           isSingleRowC = false;
+            isSingleRowC = false;
             break;
         }
     }
 
     if (!isSingleRowC) {
-       
-        size_t totalCells = static_cast<size_t>(domainSize) * domainSize;
-        std::vector<bool> visited(totalCells, false);
+        // STRUTTURA SPARSA: Niente più vettori da 67 milioni di celle!
+        std::unordered_set<long long> visited;
+        visited.reserve(targets.size());
 
         for (const auto& a : targets) {
-            visited[static_cast<size_t>(a[0]) * domainSize + a[1]] = true;
+            // Mappiamo la coppia in un singolo intero univoco
+            long long key = static_cast<long long>(a[0]) * domainSize + a[1];
+            visited.insert(key);
         }
 
         for (int e1 = 0; e1 < domainSize; ++e1) {
             for (int e2 = 0; e2 < domainSize; ++e2) {
-                if (!visited[static_cast<size_t>(e1) * domainSize + e2]) {
+                if (complement.size() >= MAX_TARGETS) return complement;
+
+                long long key = static_cast<long long>(e1) * domainSize + e2;
+                if (visited.find(key) == visited.end()) {
                     complement.push_back({ e1, e2 });
                 }
             }
         }
     }
     else {
-       
+        // Il caso 1D è già piccolo e non crea colli di bottiglia
         std::vector<bool> visited(domainSize, false);
         for (const auto& a : targets) {
             visited[a[active]] = true;
         }
         for (int e = 0; e < domainSize; ++e) {
+            if (complement.size() >= MAX_TARGETS) return complement;
             if (!visited[e]) {
                 Assignment c;
                 c[active] = e;
@@ -252,8 +259,11 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildExistsSAT(int depth, const Target
     int dSize = model.domainSize();
 
     Targets bodyTargets;
-    bodyTargets.reserve(targets.size());
+    const size_t MAX_TARGETS = 1000;
+    bodyTargets.reserve(std::min(targets.size(), MAX_TARGETS));
+
     for (const auto& t : targets) {
+        if (bodyTargets.size() >= MAX_TARGETS) break;
         Assignment ex = t;
         ex[boundVar] = randInt(0, dSize - 1);
         bodyTargets.push_back(ex);
@@ -268,13 +278,18 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildForallSAT(int depth, const Target
     int dSize = model.domainSize();
 
     Targets bodyTargets;
-    bodyTargets.reserve(targets.size() * dSize);
+    const size_t MAX_TARGETS = 1000;
+    size_t requestedSize = static_cast<size_t>(targets.size()) * static_cast<size_t>(dSize);
+    bodyTargets.reserve(std::min(requestedSize, MAX_TARGETS));
+
     for (const auto& t : targets) {
         for (int e = 0; e < dSize; ++e) {
+            if (bodyTargets.size() >= MAX_TARGETS) break;
             Assignment ex = t;
             ex[boundVar] = e;
             bodyTargets.push_back(ex);
         }
+        if (bodyTargets.size() >= MAX_TARGETS) break;
     }
 
     return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var(nameFromVar(boundVar)),

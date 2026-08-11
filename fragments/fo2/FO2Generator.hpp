@@ -15,9 +15,8 @@ protected:
     std::vector<PredInfo> activeVocab_;
 
     // FormulaBuilder Interface
-    [[nodiscard]] std::string startVar() const override { return "v1"; }
-
-    [[nodiscard]] std::string nextVar(const std::string& v) const override { return (v == "v1") ? "v2" : "v1";}
+    [[nodiscard]] std::string startVar() const override { return "V1"; }
+    [[nodiscard]] std::string nextVar(const std::string& v) const override { return (v == "V1") ? "V2" : "V1"; }
 
 
     [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;

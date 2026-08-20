@@ -13,7 +13,7 @@ OPZIONI BASE:
                              unsat    = formule insoddisfacibili
                              satbuild = costruzione di formule soddisfacibili (only FO2)
 
-  --domain-size            Dimensione del modello finito, 2^n			      
+  --domain-size            Dimensione del modello finito, 2^n (only satbuild)			      
   --depth <n>              Profondita' max albero sintattico (default: 3)
   --count <n>              Numero di formule da generare (default: 5)
   --seed <n>               Seme per riproducibilita' (default: casuale)

@@ -30,9 +30,13 @@ std::string FO2Generator::generateFormatted(const GenConfig& cfg)
 
 // generateSAT 
 // SAT is verified externally by Vampire using --verify.
-std::unique_ptr<ASTNode> FO2Generator::generateSAT(int depth, int /*domainSize*/, BudgetState & budget)
+std::unique_ptr<ASTNode> FO2Generator::generateSAT(int depth, int /*domainSize*/, BudgetState& budget)
 {
-    return build(depth, startVar(), budget);  
+    
+    auto body = build(depth, startVar(), budget);
+
+    auto q2 = std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var("V2"), std::move(body));
+    return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var("V1"), std::move(q2));
 }
 
 
@@ -69,8 +73,12 @@ std::unique_ptr<EqualityNode> FO2Generator::buildEqualityAtom(const std::string&
     return std::make_unique<EqualityNode>(Symbol::var(currentVar), Symbol::var(other));
 }
 
-std::unique_ptr<ASTNode> FO2Generator::buildComponentUNSAT(int depth, BudgetState& budget) {
-    
-    return build(depth, startVar(), budget);
+std::unique_ptr<ASTNode> FO2Generator::buildComponentUNSAT(int depth, BudgetState& budget)
+{
+   
+    auto body = build(depth, startVar(), budget);
+
+    auto q2 = std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var("V2"), std::move(body));
+    return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var("V1"), std::move(q2));
 }
 

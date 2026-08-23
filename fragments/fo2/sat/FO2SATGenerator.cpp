@@ -42,7 +42,7 @@ Targets FO2SATGenerator::complementTargets(int domainSize, const Targets& target
     }
 
     if (!isSingleRowC) {
-        // STRUTTURA SPARSA: Niente più vettori da 67 milioni di celle!
+        
         std::unordered_set<long long> visited;
         visited.reserve(targets.size());
 

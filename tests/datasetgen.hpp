@@ -4,6 +4,8 @@
 #include <fragments/fo2/FO2Generator.hpp>
 #include <fragments/guarded/GuardedGenerator.hpp>
 #include <fragments/unarynegation/UnaryNegGenerator.hpp>
+#include <fragments/modal/ModalGenerator.hpp>
+
 #include <string>
 #include <vector>
 
@@ -27,3 +29,6 @@ void generateDatasetsNative<GuardedGenerator>(GuardedGenerator& gen, const std::
 
 template <>
 void generateDatasetsNative<UnaryNegGenerator>(UnaryNegGenerator& gen, const std::string& fragment, int count);
+
+template <>
+void generateDatasetsNative<ModalGenerator>(ModalGenerator& gen, const std::string& fragment, int count);

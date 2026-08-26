@@ -136,6 +136,17 @@ int main(int argc, char* argv[]) {
             GuardedGenerator gen(args.cfg.vocab, args.seed);
             generateDatasetsNative<GuardedGenerator>(gen, args.fragment, args.count);
         }
+
+        else if (args.fragment == "unaryneg") {
+            UnaryNegGenerator gen(args.cfg.vocab, args.seed);
+            generateDatasetsNative<UnaryNegGenerator>(gen, args.fragment, args.count);
+        }
+
+        else if (args.fragment == "modal") {
+            ModalGenerator gen(args.cfg.vocab, args.seed);
+            generateDatasetsNative<ModalGenerator>(gen, args.fragment, args.count);
+        }
+
         else {
             std::cout << "Generation not defined for the fragment:" << args.fragment << "\n";
         }

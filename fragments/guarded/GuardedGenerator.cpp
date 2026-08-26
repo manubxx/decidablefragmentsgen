@@ -5,7 +5,7 @@
 #include <iostream>
 
 
-//Constructor
+
 // Constructor
 GuardedGenerator::GuardedGenerator(std::vector<PredInfo> vocab, unsigned seed) : FormulaBuilder(seed), vocab_(std::move(vocab))
 {
@@ -233,7 +233,7 @@ std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budge
 // candidateTypesGF — FormulaBuilder candidateTypes specification:
 std::vector<SymbolType> GuardedGenerator::candidateTypesGF(int depth, const BudgetState& bs) const
 {
-    auto candidates = candidateTypes(depth, bs);   // filtro budget from FormulaBuilder
+    auto candidates = candidateTypes(depth, bs);  
 
     // remove EQUALITY if not enough vars in scope
     if (currScopeFreeVars.size() < 2)

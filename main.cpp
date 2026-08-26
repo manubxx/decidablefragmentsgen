@@ -119,6 +119,8 @@ int main(int argc, char* argv[]) {
     }
 
     if (args.generateDatasets) {
+        std::cout << "\n[INFO] Using PRNG Seed: " << args.seed << "\n";
+
         if (args.fragment == "fluted") {
             FlutedGenerator gen(args.cfg.vocab, args.seed);
             generateDatasetsNative(gen, args.fragment, args.count);
@@ -128,6 +130,11 @@ int main(int argc, char* argv[]) {
             FO2Generator gen(args.cfg.vocab, args.seed);
 
             generateDatasetsNative<FO2Generator>(gen, args.fragment, args.count);
+        }
+
+        else if (args.fragment == "guarded") {
+            GuardedGenerator gen(args.cfg.vocab, args.seed);
+            generateDatasetsNative<GuardedGenerator>(gen, args.fragment, args.count);
         }
         else {
             std::cout << "Generation not defined for the fragment:" << args.fragment << "\n";

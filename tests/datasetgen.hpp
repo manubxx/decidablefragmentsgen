@@ -2,6 +2,8 @@
 #include "../FragmentTypes.hpp"
 #include <fragments/fluted/FlutedGenerator.hpp>
 #include <fragments/fo2/FO2Generator.hpp>
+#include <fragments/guarded/GuardedGenerator.hpp>
+#include <fragments/unarynegation/UnaryNegGenerator.hpp>
 #include <string>
 #include <vector>
 
@@ -19,3 +21,9 @@ void generateDatasetsNative<FlutedGenerator>(FlutedGenerator& gen, const std::st
 
 template <>
 void generateDatasetsNative<FO2Generator>(FO2Generator& gen, const std::string& fragment, int count);
+
+template <>
+void generateDatasetsNative<GuardedGenerator>(GuardedGenerator& gen, const std::string& fragment, int count);
+
+template <>
+void generateDatasetsNative<UnaryNegGenerator>(UnaryNegGenerator& gen, const std::string& fragment, int count);

@@ -109,7 +109,7 @@ void runTimeoutAnalysisNative(const AppArgs& baseArgs, const VampireRunner& runn
         "./" + baseArgs.fragment + "_datasets/timeout_cand" :
         baseArgs.benchmarkPath;
 
-    std::string reportDir = "benchmarkreport";
+     std::string reportDir = "benchmarkreport";
 
     if (!fs::exists(targetDir) || fs::is_empty(targetDir)) {
         std::cout << "No formula found in " << targetDir << "\n";

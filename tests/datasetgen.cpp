@@ -539,13 +539,10 @@ void generateDatasetsNative<UnaryNegGenerator>(UnaryNegGenerator& gen, const std
     }
 }
 
-// ---------------------------------------------------------
-// MODAL LOGIC FRAGMENT (Standard Translation)
-// ---------------------------------------------------------
 template <>
 void generateDatasetsNative<ModalGenerator>(ModalGenerator& gen, const std::string& /*fragment*/, int count) {
     std::string baseDir = "./modal_datasets";
-    std::cout << "\nGENERATING MODAL DATASETS | COUNT=" << count << "\n";
+    std::cout << "\nGENERATING MODAL DATASETS (MICRO-SCALING) | COUNT=" << count << "\n";
 
     fs::remove_all(baseDir);
     fs::create_directories(baseDir + "/modaldepthscaling");
@@ -570,7 +567,7 @@ void generateDatasetsNative<ModalGenerator>(ModalGenerator& gen, const std::stri
         };
 
     // 1. MODAL DEPTH SCALING 
-    std::vector<int> depths = { 5, 10, 15, 20 };
+    std::vector<int> depths = { 2, 3, 4, 5 };
     for (auto mode : modes) {
         for (int d : depths) {
             for (int i = 1; i <= count; ++i) {
@@ -578,11 +575,10 @@ void generateDatasetsNative<ModalGenerator>(ModalGenerator& gen, const std::stri
                 cfg.mode = mode;
                 cfg.output = OutputFormat::TPTP;
                 cfg.depth = d;
-                cfg.vocab = buildVocab("20/1");
+                cfg.vocab = buildVocab("10/1");
 
-     
-                cfg.budget.exists_count = { d / 3, d };
-                cfg.budget.forall_count = { d / 3, d };
+                cfg.budget.exists_count = { 1, d };
+                cfg.budget.forall_count = { 1, d };
 
                 std::string path = baseDir + "/modaldepthscaling/" + modeStr(mode) + "_d" + std::to_string(d) + "_" + std::to_string(i) + ".p";
                 safeGenerateAndSave(path, cfg, gen);
@@ -591,22 +587,20 @@ void generateDatasetsNative<ModalGenerator>(ModalGenerator& gen, const std::stri
     }
 
     // 2. BOX-DIAMOND ALTERNATION SCALING 
-    std::vector<int> altBudgets = { 2, 4, 6, 8 };
+    std::vector<int> altBudgets = { 1, 2, 3 };
     for (auto mode : modes) {
         for (int qb : altBudgets) {
             for (int i = 1; i <= count; ++i) {
                 GenConfig cfg;
                 cfg.mode = mode;
                 cfg.output = OutputFormat::TPTP;
-                cfg.depth = 15;
-                cfg.vocab = buildVocab("20/1");
+                cfg.depth = 5; 
+                cfg.vocab = buildVocab("10/1");
 
                 cfg.budget.exists_count = { qb, qb };
                 cfg.budget.forall_count = { qb, qb };
-
-              
-                cfg.budget.and_count = { 1, 4 };
-                cfg.budget.or_count = { 1, 4 };
+                cfg.budget.and_count = { 0, 2 };
+                cfg.budget.or_count = { 0, 2 };
 
                 std::string path = baseDir + "/alternationscaling/" + modeStr(mode) + "_alt" + std::to_string(qb) + "_" + std::to_string(i) + ".p";
                 safeGenerateAndSave(path, cfg, gen);
@@ -615,23 +609,21 @@ void generateDatasetsNative<ModalGenerator>(ModalGenerator& gen, const std::stri
     }
 
     // 3. PROPOSITIONAL BRANCHING SCALING
-    std::vector<int> branchBudgets = { 10, 20, 30, 40 };
+    std::vector<int> branchBudgets = { 2, 4, 6, 8 };
     for (auto mode : modes) {
         for (int bb : branchBudgets) {
             for (int i = 1; i <= count; ++i) {
                 GenConfig cfg;
                 cfg.mode = mode;
                 cfg.output = OutputFormat::TPTP;
-                cfg.depth = 15;
-                cfg.vocab = buildVocab("30/1");
+                cfg.depth = 4; 
+                cfg.vocab = buildVocab("15/1");
 
-                cfg.budget.and_count = { bb / 2, bb };
-                cfg.budget.or_count = { bb / 2, bb };
+                cfg.budget.and_count = { 1, bb };
+                cfg.budget.or_count = { 1, bb };
                 cfg.budget.implies_count = { 0, bb / 2 };
-
-            
-                cfg.budget.exists_count = { 2, 6 };
-                cfg.budget.forall_count = { 2, 6 };
+                cfg.budget.exists_count = { 1, 2 };
+                cfg.budget.forall_count = { 1, 2 };
 
                 std::string path = baseDir + "/branchingscaling/" + modeStr(mode) + "_branch" + std::to_string(bb) + "_" + std::to_string(i) + ".p";
                 safeGenerateAndSave(path, cfg, gen);
@@ -640,20 +632,20 @@ void generateDatasetsNative<ModalGenerator>(ModalGenerator& gen, const std::stri
     }
 
     // 4. VOCABULARY SCALING 
-    std::vector<std::string> vocabSizes = { "5/1", "10/1", "20/1", "40/1" };
+    std::vector<std::string> vocabSizes = { "2/1", "4/1", "6/1", "8/1" };
     for (auto mode : modes) {
         for (const auto& v : vocabSizes) {
             for (int i = 1; i <= count; ++i) {
                 GenConfig cfg;
                 cfg.mode = mode;
                 cfg.output = OutputFormat::TPTP;
-                cfg.depth = 12;
+                cfg.depth = 4;
                 cfg.vocab = buildVocab(v);
 
-                cfg.budget.exists_count = { 2, 5 };
-                cfg.budget.forall_count = { 2, 5 };
-                cfg.budget.and_count = { 2, 5 };
-                cfg.budget.or_count = { 2, 5 };
+                cfg.budget.exists_count = { 1, 2 };
+                cfg.budget.forall_count = { 1, 2 };
+                cfg.budget.and_count = { 1, 2 };
+                cfg.budget.or_count = { 1, 2 };
 
                 std::string safeV = v;
                 std::replace(safeV.begin(), safeV.end(), '/', '_');

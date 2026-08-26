@@ -3,6 +3,7 @@
 #include <fstream>
 #include <filesystem>
 #include <regex>
+#include <iomanip>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
@@ -26,7 +27,7 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
     std::string discardedDir;
     std::string unknownDir;
 
-    // Inizializza entrambe le cartelle per lo smistamento
+ 
     if (rootPath.filename() == "timeout_cand") {
         discardedDir = args.benchmarkPath;
     }
@@ -60,7 +61,7 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
 
             std::string datasetName = entry.path().parent_path().filename().string();
 
-            // Salta entrambe le cartelle di scarto durante l'iterazione principale
+           
             if ((datasetName == "timeout_cand" || datasetName == "unknown_cand") && rootPath.filename() != datasetName) {
                 continue;
             }
@@ -73,7 +74,7 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
             fs::path p(entry.path());
             std::string safeDiscardName = datasetName + "_" + fileName;
 
-            // LOGICA DI SMISTAMENTO
+           
             if (res.timedOut || res.runError || res.status == "Timeout" || res.status == "Error") {
                 fs::copy_file(p, fs::path(discardedDir) / safeDiscardName, fs::copy_options::overwrite_existing);
             }
@@ -81,7 +82,7 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
                 fs::copy_file(p, fs::path(unknownDir) / safeDiscardName, fs::copy_options::overwrite_existing);
             }
 
-            std::cout << "[" << res.status << "] Time: " << res.elapsedTime
+            std::cout << "[" << res.status << "] Time: " << std::fixed << std::setprecision(4) << res.elapsedTime
                 << "s | Length: " << formulaLength
                 << " | Attempts: " << attempts << "\n";
 
@@ -132,7 +133,7 @@ void runTimeoutAnalysisNative(const AppArgs& baseArgs, const VampireRunner& runn
 
         if (fs::exists(defaultReport)) {
             fs::rename(defaultReport, targetReport);
-            std::cout << "DONE. Salvato in: " << targetReport << "\n";
+            std::cout << "DONE. Saved in: " << targetReport << "\n";
         }
     }
 }

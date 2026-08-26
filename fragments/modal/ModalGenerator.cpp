@@ -48,13 +48,5 @@ std::unique_ptr<ASTNode> ModalGenerator::generateSAT(int depth, int domainSize, 
 
 std::unique_ptr<ASTNode> ModalGenerator::buildComponentUNSAT(int depth, BudgetState& budget) { 
    
-    std::string x = startVar();
-    std::string y = nextVar(x);
-
-    auto r_atom = std::make_unique<AtomicNode>(Symbol::pred("R", 2), std::vector<Symbol>{Symbol::var(x), Symbol::var(y)});
-    auto p_y = std::make_unique<AtomicNode>(Symbol::pred("P1", 1), std::vector<Symbol>{Symbol::var(y)});
-    
-    // R(x,y) => P(y)
-    auto impl = std::make_unique<BinaryConnNode>(Symbol::implies(), std::move(r_atom), std::move(p_y));
-    return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var(y), std::move(impl));
+    return build(depth, startVar(), budget);
 }

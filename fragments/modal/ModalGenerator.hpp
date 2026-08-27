@@ -12,15 +12,18 @@ protected:
 
     [[nodiscard]] std::string startVar() const override { return "w1"; }
     [[nodiscard]] std::string nextVar(const std::string& v) const override {
-      
         int n = std::stoi(v.substr(1));
         return "w" + std::to_string(n + 1);
     }
-    [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;
 
+    [[nodiscard]] std::unique_ptr<AtomicNode> buildAtomic(const std::string& currentVar) override;
     [[nodiscard]] std::unique_ptr<ASTNode> build(int depth, const std::string& currentVar, BudgetState& budget) override;
 
-    
+    [[nodiscard]] std::vector<SymbolType> candidateTypes(int depth, const BudgetState& budget) const override;
+
     [[nodiscard]] std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) override;
+
+    
+    [[nodiscard]] std::unique_ptr<ASTNode> generateUNSAT(int depth, BudgetState& budget) override;
     [[nodiscard]] std::unique_ptr<ASTNode> buildComponentUNSAT(int depth, BudgetState& budget) override;
 };

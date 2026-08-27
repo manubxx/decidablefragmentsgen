@@ -135,7 +135,7 @@ protected:
     // Shared methods
     virtual std::unique_ptr<ASTNode> build(int depth, const std::string& currentVar, BudgetState& budget);
 
-    std::unique_ptr<ASTNode> generateUNSAT(int depth, BudgetState& budget);
+    virtual std::unique_ptr<ASTNode> generateUNSAT(int depth, BudgetState& budget);
 
     virtual std::vector<SymbolType> candidateTypes(int depth, const BudgetState& budget) const;
 

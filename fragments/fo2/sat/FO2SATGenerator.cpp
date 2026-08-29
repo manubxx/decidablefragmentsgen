@@ -93,16 +93,29 @@ std::unique_ptr<ASTNode> FO2SATGenerator::generateSAT(int depth, int domainSize,
     FiniteModel model(activeVocab_, rng_, actualDomainSize);
     int dSize = model.domainSize();
 
+  
+    std::vector<SymbolType> rootCandidates;
+    if (budget.canUse(SymbolType::EXISTS)) rootCandidates.push_back(SymbolType::EXISTS);
+    if (budget.canUse(SymbolType::FORALL)) rootCandidates.push_back(SymbolType::FORALL);
+
+   
+    if (rootCandidates.empty()) {
+        Targets initialTargets;
+        for (int e = 0; e < dSize; ++e) initialTargets.push_back({ e, 0 });
+        return buildSAT(depth, initialTargets, model, 0, budget);
+    }
+
+    SymbolType chosenRoot = pickType(depth, budget, rootCandidates);
+    bool rootExists = (chosenRoot == SymbolType::EXISTS);
+
+    
     std::vector<int> domCopy(dSize);
     std::iota(domCopy.begin(), domCopy.end(), 0);
     std::shuffle(domCopy.begin(), domCopy.end(), rng_);
     int ns = randInt(1, dSize);
     domCopy.resize(ns);
 
-    bool rootExists = (randInt(0, 1) == 0);
     Targets bodyTargets;
-
-  
     std::vector<int> fullDom;
     if (!rootExists) { //FORALL
         fullDom.resize(dSize);
@@ -112,11 +125,11 @@ std::unique_ptr<ASTNode> FO2SATGenerator::generateSAT(int depth, int domainSize,
 
     bodyTargets.reserve(targetDomain.size());
     for (int e : targetDomain) {
-        bodyTargets.push_back({ e, 0 }); 
+        bodyTargets.push_back({ e, 0 });
     }
 
     int bodyDepth = (depth > 0) ? depth - 1 : 0;
-    auto body = buildSAT(bodyDepth, bodyTargets, model, 0, budget); 
+    auto body = buildSAT(bodyDepth, bodyTargets, model, 0, budget);
 
     auto rootQ = rootExists ? Symbol::exists() : Symbol::forall();
     return std::make_unique<QuantifierNode>(rootQ, Symbol::var("v1"), std::move(body));
@@ -249,9 +262,20 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targe
         return buildAtomicSAT(targets, model, currentVar);
     }
 
-    return std::make_unique<BinaryConnNode>(Symbol::implies(),
-        buildSAT(depth - 1, antecedentTargets, model, currentVar, budget),
-        buildSAT(depth - 1, rightTargets, model, currentVar, budget));
+  
+    auto left = buildSAT(depth - 1, antecedentTargets, model, currentVar, budget);
+    auto right = buildSAT(depth - 1, rightTargets, model, currentVar, budget);
+    auto impliesNode = std::make_unique<BinaryConnNode>(Symbol::implies(), std::move(left), std::move(right));
+
+   
+    for (const auto& t : targets) {
+        if (!evaluateASTNode(*impliesNode, t, model)) {
+          
+            return buildAtomicSAT(targets, model, currentVar);
+        }
+    }
+
+    return impliesNode;
 }
 
 std::unique_ptr<ASTNode> FO2SATGenerator::buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {

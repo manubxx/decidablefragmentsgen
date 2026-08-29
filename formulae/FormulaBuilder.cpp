@@ -136,7 +136,7 @@ std::vector<SymbolType> FormulaBuilder::candidateTypes(int depth, const BudgetSt
     static const SymbolType pool[] = {
         SymbolType::AND, SymbolType::OR, SymbolType::NEG,
         SymbolType::IMPLIES, SymbolType::EXISTS, SymbolType::FORALL,
-        SymbolType::EQUALITY,
+        SymbolType::EQUALITY,SymbolType::PREDICATE
     };
 
     std::vector<SymbolType> candidates;
@@ -168,7 +168,7 @@ SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget, const std::v
 
     const std::vector<SymbolType>* pick = &candidates;
     if (!forced.empty()) {
-        if (randInt(1, 100) <= 85) {
+        if (randInt(1, 100) <= 60) {
             pick = &forced;
         }
     }

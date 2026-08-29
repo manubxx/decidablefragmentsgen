@@ -116,7 +116,7 @@ void runTimeoutAnalysisNative(const AppArgs& baseArgs, const VampireRunner& runn
         return;
     }
 
-    std::vector<int> timeouts = { 30, 60, 120 };
+    std::vector<int> timeouts = { 30, 60 };
 
     for (int t : timeouts) {
         std::cout << "\n Timeout Analysis (Calibration): " << t << "s ===\n";

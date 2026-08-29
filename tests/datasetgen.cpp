@@ -180,7 +180,7 @@ void generateDatasetsNative<FO2Generator>(FO2Generator& gen, const std::string& 
         };
 
     // 1. VOCAB SCALING
-    std::vector<std::string> predsList = { "10/1", "5/2", "10/2", "15/2" };
+    std::vector<std::string> predsList = { "5/1,2/2", "10/1,5/2", "15/1,8/2", "20/1,10/2" };
     for (auto mode : modes) {
         for (const auto& preds : predsList) {
             for (int i = 1; i <= count; ++i) {
@@ -212,8 +212,8 @@ void generateDatasetsNative<FO2Generator>(FO2Generator& gen, const std::string& 
                 cfg.depth = d;
                 cfg.vocab = buildVocab("15/1,10/2");
 
-                cfg.budget.exists_count = { 2, 2 };
-                cfg.budget.forall_count = { 2, 2 };
+                cfg.budget.exists_count = { 0, 2 };
+                cfg.budget.forall_count = { 0, 2 };
 
                 std::string path = baseDir + "/depthscaling/" + modeStr(mode) + "_d" + std::to_string(d) + "_" + std::to_string(i) + ".p";
                 safeGenerateAndSave(path, cfg, gen);
@@ -229,7 +229,7 @@ void generateDatasetsNative<FO2Generator>(FO2Generator& gen, const std::string& 
                 GenConfig cfg;
                 cfg.mode = mode;
                 cfg.output = OutputFormat::TPTP;
-                cfg.depth = 18;
+                cfg.depth = qb * 2 + 10;
                 cfg.vocab = buildVocab("20/1,5/2");
 
                 cfg.budget.forall_count = { qb, qb };
@@ -594,7 +594,7 @@ void generateDatasetsNative<ModalGenerator>(ModalGenerator& gen, const std::stri
         for (int qb : altBudgets) {
             for (int i = 1; i <= count; ++i) {
                 GenConfig cfg;
-                cfg.mode = mode;
+                cfg.mode = mode; 
                 cfg.output = OutputFormat::TPTP;
                 cfg.depth = 15; 
                 cfg.vocab = buildVocab("20/1");

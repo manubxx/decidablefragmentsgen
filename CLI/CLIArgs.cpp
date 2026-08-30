@@ -216,6 +216,7 @@ AppArgs parseArgs(int argc, char* argv[])
         else if (arg == "--exists")          args.cfg.budget.exists_count = parseRange(val);
         else if (arg == "--forall")          args.cfg.budget.forall_count = parseRange(val);
         else if (arg == "--implies")         args.cfg.budget.implies_count = parseRange(val);
+        else if (arg == "--iff")             args.cfg.budget.iff_count = parseRange(val);
         else if (arg == "--eq")              args.cfg.budget.eq_count = parseRange(val);
         else if (arg == "--run-benchmarks") { args.runBenchmarks = true; args.benchmarkPath = val; }
 

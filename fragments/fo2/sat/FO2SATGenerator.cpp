@@ -146,6 +146,7 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildSAT(int depth, const Targets& tar
     case SymbolType::AND:      return buildAndSAT(depth, targets, model, currentVar, budget);
     case SymbolType::OR:       return buildOrSAT(depth, targets, model, currentVar, budget);
     case SymbolType::IMPLIES:  return buildImpliesSAT(depth, targets, model, currentVar, budget);
+    case SymbolType::IFF:      return buildIffSAT(depth, targets, model, currentVar, budget);
     case SymbolType::EXISTS:   return buildExistsSAT(depth, targets, model, currentVar, budget);
     case SymbolType::FORALL:   return buildForallSAT(depth, targets, model, currentVar, budget);
     case SymbolType::EQUALITY: return buildEqualitySAT(targets, model, currentVar);
@@ -276,6 +277,24 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targe
     }
 
     return impliesNode;
+}
+
+
+std::unique_ptr<ASTNode> FO2SATGenerator::buildIffSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+
+
+    auto left = buildSAT(depth - 1, targets, model, currentVar, budget);
+    auto right = buildSAT(depth - 1, targets, model, currentVar, budget);
+
+    auto iffNode = std::make_unique<BinaryConnNode>(Symbol::iff(), std::move(left), std::move(right));
+
+    for (const auto& t : targets) {
+        if (!evaluateASTNode(*iffNode, t, model)) {
+            return buildAtomicSAT(targets, model, currentVar);
+        }
+    }
+
+    return iffNode;
 }
 
 std::unique_ptr<ASTNode> FO2SATGenerator::buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {

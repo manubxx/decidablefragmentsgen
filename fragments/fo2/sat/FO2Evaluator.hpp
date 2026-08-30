@@ -48,6 +48,7 @@ public:
         case SymbolType::AND:     result_ = lv && rv; break;
         case SymbolType::OR:      result_ = lv || rv; break;
         case SymbolType::IMPLIES: result_ = !lv || rv; break;
+        case SymbolType::IFF:     result_ = (lv == rv); break;
         default:                  result_ = false;
         }
     }

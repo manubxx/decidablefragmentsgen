@@ -71,6 +71,8 @@ static int runGenerator(Gen& gen, const GenConfig& cfg, int count, bool verify, 
             std::string extension = (cfg.output == OutputFormat::TPTP) ? ".p" : ".txt";
             std::ofstream outFile(outputDir + "/formula_" + std::to_string(generatedCount) + extension);
             if (outFile) {
+                outFile << "% Formula " << generatedCount << "\n";
+                outFile << "% ATTEMPTS: " << attempts << "\n";
                 outFile << formula;
                 outFile.close();
             }

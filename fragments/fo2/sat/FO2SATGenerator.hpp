@@ -22,6 +22,7 @@ private:
     std::unique_ptr<ASTNode> buildAndSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
     std::unique_ptr<ASTNode> buildOrSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
     std::unique_ptr<ASTNode> buildImpliesSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
+    std::unique_ptr<ASTNode> buildIffSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
     std::unique_ptr<ASTNode> buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
     std::unique_ptr<ASTNode> buildForallSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
 

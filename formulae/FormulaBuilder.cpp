@@ -86,6 +86,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     checkEven(budget.exists_left, "EXISTS");
     checkEven(budget.forall_left, "FORALL");
     checkEven(budget.implies_left, "IMPLIES");
+    checkEven(budget.iff_left, "IFF");
     checkEven(budget.eq_left, "EQUALITY");
 
     // budget snapshot
@@ -104,6 +105,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     phiBudget.exists_left = (budget.exists_left > 0) ? budget.exists_left / 2 : budget.exists_left;
     phiBudget.forall_left = (budget.forall_left > 0) ? budget.forall_left / 2 : budget.forall_left;
     phiBudget.implies_left = (budget.implies_left > 0) ? budget.implies_left / 2 : budget.implies_left;
+    phiBudget.iff_left = (budget.iff_left > 0) ? budget.iff_left / 2 : budget.iff_left;
     phiBudget.eq_left = (budget.eq_left > 0) ? budget.eq_left / 2 : budget.eq_left;
 
     auto phi = buildComponentUNSAT(childDepth, phiBudget);
@@ -124,6 +126,7 @@ std::unique_ptr<ASTNode> FormulaBuilder::generateUNSAT(int depth, BudgetState& b
     applyDoubleDelta(budget.exists_left, originalBudget.exists_left, phiBudget.exists_left);
     applyDoubleDelta(budget.forall_left, originalBudget.forall_left, phiBudget.forall_left);
     applyDoubleDelta(budget.implies_left, originalBudget.implies_left, phiBudget.implies_left);
+    applyDoubleDelta(budget.iff_left, originalBudget.iff_left, phiBudget.iff_left);
     applyDoubleDelta(budget.eq_left, originalBudget.eq_left, phiBudget.eq_left);
 
     return std::make_unique<BinaryConnNode>(Symbol::and_(), std::move(phi), std::make_unique<NegNode>(std::move(copy)) );
@@ -135,8 +138,8 @@ std::vector<SymbolType> FormulaBuilder::candidateTypes(int depth, const BudgetSt
 
     static const SymbolType pool[] = {
         SymbolType::AND, SymbolType::OR, SymbolType::NEG,
-        SymbolType::IMPLIES, SymbolType::EXISTS, SymbolType::FORALL,
-        SymbolType::EQUALITY,SymbolType::PREDICATE
+        SymbolType::IMPLIES, SymbolType::IFF, SymbolType::EXISTS, SymbolType::FORALL, 
+        SymbolType::EQUALITY, SymbolType::PREDICATE
     };
 
     std::vector<SymbolType> candidates;
@@ -160,6 +163,7 @@ SymbolType FormulaBuilder::pickType(int depth, BudgetState& budget, const std::v
         case SymbolType::EXISTS:   left = budget.exists_left;  break;
         case SymbolType::FORALL:   left = budget.forall_left;  break;
         case SymbolType::IMPLIES:  left = budget.implies_left; break;
+        case SymbolType::IFF:      left = budget.iff_left;     break;
         case SymbolType::EQUALITY: left = budget.eq_left;      break;
         default: break;
         }
@@ -212,6 +216,11 @@ std::unique_ptr<ASTNode> FormulaBuilder::build(int depth, const std::string& cur
 
     case SymbolType::IMPLIES:
         return std::make_unique<BinaryConnNode>(Symbol::implies(),
+            build(depth - 1, currentVar, budget),
+            build(depth - 1, currentVar, budget));
+
+    case SymbolType::IFF: 
+        return std::make_unique<BinaryConnNode>(Symbol::iff(),
             build(depth - 1, currentVar, budget),
             build(depth - 1, currentVar, budget));
 

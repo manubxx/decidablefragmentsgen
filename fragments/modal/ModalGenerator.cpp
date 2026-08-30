@@ -19,7 +19,7 @@ std::vector<SymbolType> ModalGenerator::candidateTypes(int depth, const BudgetSt
     if (depth == 0) return {};
     static const SymbolType pool[] = {
         SymbolType::AND, SymbolType::OR, SymbolType::NEG,
-        SymbolType::IMPLIES, SymbolType::EXISTS, SymbolType::FORALL
+        SymbolType::IMPLIES, SymbolType::IFF, SymbolType::EXISTS, SymbolType::FORALL
     };
     std::vector<SymbolType> candidates;
     for (auto t : pool) {
@@ -44,6 +44,8 @@ std::unique_ptr<ASTNode> ModalGenerator::build(int depth, const std::string& cur
         return std::make_unique<BinaryConnNode>(Symbol::or_(), build(depth - 1, currentVar, budget), build(depth - 1, currentVar, budget));
     case SymbolType::IMPLIES:
         return std::make_unique<BinaryConnNode>(Symbol::implies(), build(depth - 1, currentVar, budget), build(depth - 1, currentVar, budget));
+    case SymbolType::IFF:
+        return std::make_unique<BinaryConnNode>(Symbol::iff(), build(depth - 1, currentVar, budget), build(depth - 1, currentVar, budget));
     case SymbolType::EXISTS: {
         std::string next = nextVar(currentVar);
         auto r_atom = std::make_unique<AtomicNode>(Symbol::pred("r", 2), std::vector<Symbol>{Symbol::var(currentVar), Symbol::var(next)});
@@ -90,6 +92,7 @@ std::unique_ptr<ASTNode> ModalGenerator::generateUNSAT(int depth, BudgetState& b
     phiBudget.exists_left = (budget.exists_left > 0) ? budget.exists_left / 2 : budget.exists_left;
     phiBudget.forall_left = (budget.forall_left > 0) ? budget.forall_left / 2 : budget.forall_left;
     phiBudget.implies_left = (budget.implies_left > 0) ? budget.implies_left / 2 : budget.implies_left;
+    phiBudget.iff_left = (budget.iff_left > 0) ? budget.iff_left / 2 : budget.iff_left;
 
     auto phi = build(childDepth, next, phiBudget);
     auto phi_copy = phi->clone();
@@ -107,6 +110,7 @@ std::unique_ptr<ASTNode> ModalGenerator::generateUNSAT(int depth, BudgetState& b
     applyDoubleDelta(budget.exists_left, originalBudget.exists_left, phiBudget.exists_left);
     applyDoubleDelta(budget.forall_left, originalBudget.forall_left, phiBudget.forall_left);
     applyDoubleDelta(budget.implies_left, originalBudget.implies_left, phiBudget.implies_left);
+    applyDoubleDelta(budget.iff_left, originalBudget.iff_left, phiBudget.iff_left);
 
     // Box: ! [next] : (r(current, next) => phi)
     auto r_box = std::make_unique<AtomicNode>(Symbol::pred("r", 2), std::vector<Symbol>{Symbol::var(current), Symbol::var(next)});

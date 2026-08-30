@@ -164,6 +164,11 @@ std::unique_ptr<ASTNode> GuardedGenerator::buildGF(int depth, BudgetState& budge
             buildGF(depth - 1, budget),
             buildGF(depth - 1, budget));
 
+    case SymbolType::IFF:
+        return std::make_unique<BinaryConnNode>(Symbol::iff(),
+            buildGF(depth - 1, budget),
+            buildGF(depth - 1, budget));
+
     case SymbolType::EQUALITY: {
        
         int i = randInt(0, static_cast<int>(currScopeFreeVars.size()) - 1);

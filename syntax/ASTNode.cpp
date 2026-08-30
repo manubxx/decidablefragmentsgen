@@ -130,7 +130,8 @@ void NegNode::accept(ASTVisitor& visitor) const {
 BinaryConnNode::BinaryConnNode(Symbol connSymbol, std::unique_ptr<ASTNode> left, std::unique_ptr<ASTNode> right)
     : conn_(std::move(connSymbol)), left_(std::move(left)), right_(std::move(right))
 {
-    if (conn_.type != SymbolType::AND && conn_.type != SymbolType::OR && conn_.type != SymbolType::IMPLIES)
+    if (conn_.type != SymbolType::AND && conn_.type != SymbolType::OR &&
+        conn_.type != SymbolType::IMPLIES && conn_.type != SymbolType::IFF)
         throw std::invalid_argument("BinaryConnNode: not binary symbol " + conn_.name);
     if (!left_ || !right_)
         throw std::invalid_argument("BinaryConnNode: null child");
@@ -143,9 +144,10 @@ std::string BinaryConnNode::toString() const {
 std::string BinaryConnNode::toTPTP() const {
     std::string op;
     switch (conn_.type) {
-    case SymbolType::AND:     op = "&";  break;
-    case SymbolType::OR:      op = "|";  break;
-    case SymbolType::IMPLIES: op = "=>"; break;
+    case SymbolType::AND:     op = "&";   break;
+    case SymbolType::OR:      op = "|";   break;
+    case SymbolType::IMPLIES: op = "=>";  break;
+    case SymbolType::IFF:     op = "<=>"; break;
     default:                  op = "?";
     }
     return "(" + left_->toTPTP() + " " + op + " " + right_->toTPTP() + ")";
@@ -156,6 +158,15 @@ std::unique_ptr<ASTNode> BinaryConnNode::clone() const {
 }
 
 std::unique_ptr<ASTNode> BinaryConnNode::toNNF(bool negated) const {
+    // Srotola A <=> B in (A => B) & (B => A) e calcola l'NNF
+    if (conn_.type == SymbolType::IFF) {
+        auto equiv = std::make_unique<BinaryConnNode>(
+            Symbol::and_(),
+            std::make_unique<BinaryConnNode>(Symbol::implies(), left_->clone(), right_->clone()),
+            std::make_unique<BinaryConnNode>(Symbol::implies(), right_->clone(), left_->clone())
+        );
+        return equiv->toNNF(negated);
+    }
     if (conn_.type == SymbolType::IMPLIES) {
         auto equiv = std::make_unique<BinaryConnNode>(
             Symbol::or_(),

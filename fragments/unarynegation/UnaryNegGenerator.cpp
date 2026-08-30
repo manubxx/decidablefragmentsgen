@@ -214,6 +214,11 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
             buildUN(depth - 1, currFreeVars, budget),
             buildUN(depth - 1, currFreeVars, budget));
 
+    case SymbolType::IFF:
+        return std::make_unique<BinaryConnNode>(Symbol::iff(),
+            buildUN(depth - 1, currFreeVars, budget),
+            buildUN(depth - 1, currFreeVars, budget));
+
     case SymbolType::EXISTS:
     case SymbolType::FORALL: {
         int maxIdx = 0;
@@ -270,9 +275,9 @@ std::vector<SymbolType> UnaryNegGenerator::candidateTypesUN(int depth, const std
     if (depth == 0) return {};
 
     static const SymbolType pool[] = {
-        SymbolType::AND, SymbolType::OR, SymbolType::NEG,
-        SymbolType::IMPLIES, SymbolType::EXISTS, SymbolType::FORALL,
-        SymbolType::EQUALITY,
+         SymbolType::AND, SymbolType::OR, SymbolType::NEG,
+         SymbolType::IMPLIES, SymbolType::IFF, SymbolType::EXISTS, SymbolType::FORALL,
+         SymbolType::EQUALITY,
     };
 
     std::vector<SymbolType> candidates;

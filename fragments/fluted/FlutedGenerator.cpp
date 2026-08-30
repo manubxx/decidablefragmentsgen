@@ -157,6 +157,11 @@ std::unique_ptr<ASTNode> FlutedGenerator::buildFL(int depth, int stackDepth, Bud
             buildFL(depth - 1, stackDepth, budget),
             buildFL(depth - 1, stackDepth, budget));
 
+    case SymbolType::IFF:
+        return std::make_unique<BinaryConnNode>(Symbol::iff(),
+            buildFL(depth - 1, stackDepth, budget),
+            buildFL(depth - 1, stackDepth, budget));
+
     case SymbolType::EXISTS: {
         int nextSD = stackDepth + 1;
         return std::make_unique<QuantifierNode>(Symbol::exists(), Symbol::var(varName(nextSD)),

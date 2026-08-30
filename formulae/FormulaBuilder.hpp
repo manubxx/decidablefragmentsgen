@@ -51,6 +51,7 @@ protected:
         int exists_left;
         int forall_left;
         int implies_left;
+        int iff_left;
         int eq_left;
 
         // Precise value assignment or random selection in the defined range
@@ -75,6 +76,7 @@ protected:
             , exists_left(sample(b.exists_count, rng))
             , forall_left(sample(b.forall_count, rng))
             , implies_left(sample(b.implies_count, rng))
+            , iff_left(sample(b.iff_count, rng))
             , eq_left(sample(b.eq_count, rng))
         {}
 
@@ -86,6 +88,7 @@ protected:
             case SymbolType::EXISTS:   return exists_left != 0;
             case SymbolType::FORALL:   return forall_left != 0;
             case SymbolType::IMPLIES:  return implies_left != 0;
+            case SymbolType::IFF:      return iff_left != 0;
             case SymbolType::EQUALITY: return eq_left != 0;
             default: return true;
             }
@@ -99,6 +102,7 @@ protected:
             if (exists_left > 0)  r += exists_left;
             if (forall_left > 0)  r += forall_left;
             if (implies_left > 0) r += implies_left;
+            if (iff_left > 0)     r += iff_left;
             if (eq_left > 0)      r += eq_left;
             return r;
         }
@@ -111,6 +115,7 @@ protected:
             case SymbolType::EXISTS:   if (exists_left > 0)  --exists_left;  break;
             case SymbolType::FORALL:   if (forall_left > 0)  --forall_left;  break;
             case SymbolType::IMPLIES:  if (implies_left > 0) --implies_left; break;
+            case SymbolType::IFF:      if (iff_left > 0)     --iff_left;     break;
             case SymbolType::EQUALITY: if (eq_left > 0)      --eq_left;      break;
             default: break;
             }

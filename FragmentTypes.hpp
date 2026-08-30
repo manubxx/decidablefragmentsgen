@@ -43,12 +43,14 @@ struct NodeBudget {
     BudgetRange exists_count;
     BudgetRange forall_count;
     BudgetRange implies_count;
+    BudgetRange iff_count;
     BudgetRange eq_count;
 
     [[nodiscard]] bool hasAnyConstraint() const {
         return and_count.isConstrained() || or_count.isConstrained() ||
             not_count.isConstrained() || exists_count.isConstrained() ||
-            forall_count.isConstrained() || implies_count.isConstrained()|| eq_count.isConstrained();
+            forall_count.isConstrained() || implies_count.isConstrained() ||
+            iff_count.isConstrained() || eq_count.isConstrained();
     }
 
     void validate() const {
@@ -58,6 +60,7 @@ struct NodeBudget {
         exists_count.validate("exists");
         forall_count.validate("forall");
         implies_count.validate("implies");
+        iff_count.validate("iff");
         eq_count.validate("eq");
     }
 
@@ -65,8 +68,8 @@ struct NodeBudget {
         int t = 0;
         auto add = [&](const BudgetRange& r) { if (r.min >= 0) t += r.min; };
         add(and_count); add(or_count); add(not_count);
-        add(exists_count); add(forall_count); add(implies_count); add(eq_count);
-
+        add(exists_count); add(forall_count); add(implies_count);
+        add(iff_count); add(eq_count); 
         return t;
     }
 };

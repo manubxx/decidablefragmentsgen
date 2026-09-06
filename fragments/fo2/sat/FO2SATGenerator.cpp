@@ -5,16 +5,16 @@
 #include <array>
 #include <unordered_set>
 
-std::vector<Symbol> FO2SATGenerator::generateFO2Args(int arity, Variable currentVar, Variable other) {
+std::vector<Symbol> FO2SATGenerator::generateFO2Args(int arity, Variable currentVar, Variable other, bool isOtherBound) {
     std::vector<Symbol> args;
     args.reserve(arity);
     if (arity == 1) {
-        Variable chosenVar = (randInt(0, 1) == 0) ? currentVar : other;
+        Variable chosenVar = (!isOtherBound || randInt(0, 1) == 0) ? currentVar : other;
         args.push_back(Symbol::var(nameFromVar(chosenVar)));
     }
-    else {
-        Variable arg1 = (randInt(0, 1) == 0) ? currentVar : other;
-        Variable arg2 = (randInt(0, 1) == 0) ? currentVar : other;
+    else { // arity == 2
+        Variable arg1 = (!isOtherBound || randInt(0, 1) == 0) ? currentVar : other;
+        Variable arg2 = (!isOtherBound || randInt(0, 1) == 0) ? currentVar : other;
         args.push_back(Symbol::var(nameFromVar(arg1)));
         args.push_back(Symbol::var(nameFromVar(arg2)));
     }
@@ -102,7 +102,7 @@ std::unique_ptr<ASTNode> FO2SATGenerator::generateSAT(int depth, int domainSize,
     if (rootCandidates.empty()) {
         Targets initialTargets;
         for (int e = 0; e < dSize; ++e) initialTargets.push_back({ e, 0 });
-        return buildSAT(depth, initialTargets, model, 0, budget);
+        return buildSAT(depth, initialTargets, model, 0, budget,false);
     }
 
     SymbolType chosenRoot = pickType(depth, budget, rootCandidates);
@@ -129,32 +129,32 @@ std::unique_ptr<ASTNode> FO2SATGenerator::generateSAT(int depth, int domainSize,
     }
 
     int bodyDepth = (depth > 0) ? depth - 1 : 0;
-    auto body = buildSAT(bodyDepth, bodyTargets, model, 0, budget);
+    auto body = buildSAT(bodyDepth, bodyTargets, model, 0, budget, false);
 
     auto rootQ = rootExists ? Symbol::exists() : Symbol::forall();
-    return std::make_unique<QuantifierNode>(rootQ, Symbol::var("v1"), std::move(body));
+    return std::make_unique<QuantifierNode>(rootQ, Symbol::var("V1"), std::move(body));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
-    if (depth == 0) return buildAtomicSAT(targets, model, currentVar);
+std::unique_ptr<ASTNode> FO2SATGenerator::buildSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound) {
+    if (depth == 0) return buildAtomicSAT(targets, model, currentVar, isOtherBound);
 
     auto candidates = candidateTypes(depth, budget);
-    if (candidates.empty()) return buildAtomicSAT(targets, model, currentVar);
+    if (candidates.empty()) return buildAtomicSAT(targets, model, currentVar,  isOtherBound);
 
     switch (pickType(depth, budget)) {
-    case SymbolType::NEG:      return buildNegSAT(depth, targets, model, currentVar, budget);
-    case SymbolType::AND:      return buildAndSAT(depth, targets, model, currentVar, budget);
-    case SymbolType::OR:       return buildOrSAT(depth, targets, model, currentVar, budget);
-    case SymbolType::IMPLIES:  return buildImpliesSAT(depth, targets, model, currentVar, budget);
-    case SymbolType::IFF:      return buildIffSAT(depth, targets, model, currentVar, budget);
-    case SymbolType::EXISTS:   return buildExistsSAT(depth, targets, model, currentVar, budget);
-    case SymbolType::FORALL:   return buildForallSAT(depth, targets, model, currentVar, budget);
-    case SymbolType::EQUALITY: return buildEqualitySAT(targets, model, currentVar);
-    default:                   return buildAtomicSAT(targets, model, currentVar);
+    case SymbolType::NEG:      return buildNegSAT(depth, targets, model, currentVar, budget, isOtherBound);
+    case SymbolType::AND:      return buildAndSAT(depth, targets, model, currentVar, budget,  isOtherBound);
+    case SymbolType::OR:       return buildOrSAT(depth, targets, model, currentVar, budget,isOtherBound);
+    case SymbolType::IMPLIES:  return buildImpliesSAT(depth, targets, model, currentVar, budget, isOtherBound);
+    case SymbolType::IFF:      return buildIffSAT(depth, targets, model, currentVar, budget, isOtherBound);
+    case SymbolType::EXISTS:   return buildExistsSAT(depth, targets, model, currentVar, budget, isOtherBound);
+    case SymbolType::FORALL:   return buildForallSAT(depth, targets, model, currentVar, budget, isOtherBound);
+    case SymbolType::EQUALITY: return buildEqualitySAT(targets, model, currentVar, isOtherBound);
+    default:                   return buildAtomicSAT(targets, model, currentVar, isOtherBound);
     }
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildAtomicSAT(const Targets& targets, const FiniteModel& model, Variable currentVar) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildAtomicSAT(const Targets& targets, const FiniteModel& model, Variable currentVar, bool isOtherBound) {
     Variable other = 1 - currentVar;
 
     std::vector<int> idx(activeVocab_.size());
@@ -164,7 +164,7 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildAtomicSAT(const Targets& targets,
     
     for (int i : idx) {
         const auto& p = activeVocab_[i];
-        auto args = generateFO2Args(p.arity, currentVar, other);
+        auto args = generateFO2Args(p.arity, currentVar, other, isOtherBound);
         Variable arg1 = varFromName(args[0].name);
         Variable arg2 = (p.arity > 1) ? varFromName(args[1].name) : 0;
 
@@ -185,11 +185,15 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildAtomicSAT(const Targets& targets,
     );
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildEqualitySAT(const Targets& targets, const FiniteModel& model, Variable currentVar) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildEqualitySAT(const Targets& targets, const FiniteModel& model, Variable currentVar,bool isOtherBound) {
     Variable other = 1 - currentVar;
-    std::vector<std::pair<Variable, Variable>> combos = {
-        {currentVar, currentVar}, {currentVar, other}, {other, currentVar}, {other, other}
-    };
+    std::vector<std::pair<Variable, Variable>> combos;
+    if (isOtherBound) {
+        combos = { {currentVar, currentVar}, {currentVar, other}, {other, currentVar}, {other, other} };
+    }
+    else {
+        combos = { {currentVar, currentVar} };
+    }
     std::shuffle(combos.begin(), combos.end(), rng_);
 
     for (const auto& [lhs, rhs] : combos) {
@@ -205,34 +209,34 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildEqualitySAT(const Targets& target
         if (allFalse) return std::make_unique<NegNode>(std::move(eq));
     }
 
-    return buildAtomicSAT(targets, model, currentVar);
+    return buildAtomicSAT(targets, model, currentVar,isOtherBound);
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildNegSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildNegSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound) {
     auto complement = complementTargets(model.domainSize(), targets, currentVar);
 
     if (complement.empty()) {
-        return buildAtomicSAT(targets, model, currentVar);
+        return buildAtomicSAT(targets, model, currentVar, isOtherBound);
     }
 
-    auto child = buildSAT(depth - 1, complement, model, currentVar, budget);
+    auto child = buildSAT(depth - 1, complement, model, currentVar, budget, isOtherBound);
 
     for (const auto& t : targets) {
         if (evaluateASTNode(*child, t, model)) {
-            return buildAtomicSAT(targets, model, currentVar);
+            return buildAtomicSAT(targets, model, currentVar,isOtherBound);
         }
     }
 
     return std::make_unique<NegNode>(std::move(child));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildAndSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildAndSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound) {
     return std::make_unique<BinaryConnNode>(Symbol::and_(),
-        buildSAT(depth - 1, targets, model, currentVar, budget),
-        buildSAT(depth - 1, targets, model, currentVar, budget));
+        buildSAT(depth - 1, targets, model, currentVar, budget, isOtherBound),
+        buildSAT(depth - 1, targets, model, currentVar, budget, isOtherBound));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildOrSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildOrSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget,bool isOtherBound) {
     Targets leftT, rightT;
     for (const auto& t : targets) {
         int coin = randInt(0, 2);
@@ -243,11 +247,11 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildOrSAT(int depth, const Targets& t
     if (rightT.empty()) rightT = { targets[randInt(0, static_cast<int>(targets.size()) - 1)] };
 
     return std::make_unique<BinaryConnNode>(Symbol::or_(),
-        buildSAT(depth - 1, leftT, model, currentVar, budget),
-        buildSAT(depth - 1, rightT, model, currentVar, budget));
+        buildSAT(depth - 1, leftT, model, currentVar, budget, isOtherBound),
+        buildSAT(depth - 1, rightT, model, currentVar, budget, isOtherBound));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound) {
     Targets leftCoverTargets, rightTargets;
     for (const auto& t : targets) {
         int coin = randInt(0, 2);
@@ -260,19 +264,19 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targe
     auto antecedentTargets = complementTargets(model.domainSize(), leftCoverTargets, currentVar);
 
     if (antecedentTargets.empty()) {
-        return buildAtomicSAT(targets, model, currentVar);
+        return buildAtomicSAT(targets, model, currentVar, isOtherBound);
     }
 
   
-    auto left = buildSAT(depth - 1, antecedentTargets, model, currentVar, budget);
-    auto right = buildSAT(depth - 1, rightTargets, model, currentVar, budget);
+    auto left = buildSAT(depth - 1, antecedentTargets, model, currentVar, budget, isOtherBound);
+    auto right = buildSAT(depth - 1, rightTargets, model, currentVar, budget,isOtherBound);
     auto impliesNode = std::make_unique<BinaryConnNode>(Symbol::implies(), std::move(left), std::move(right));
 
    
     for (const auto& t : targets) {
         if (!evaluateASTNode(*impliesNode, t, model)) {
           
-            return buildAtomicSAT(targets, model, currentVar);
+            return buildAtomicSAT(targets, model, currentVar, isOtherBound);
         }
     }
 
@@ -280,24 +284,24 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildImpliesSAT(int depth, const Targe
 }
 
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildIffSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildIffSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound) {
 
 
-    auto left = buildSAT(depth - 1, targets, model, currentVar, budget);
-    auto right = buildSAT(depth - 1, targets, model, currentVar, budget);
+    auto left = buildSAT(depth - 1, targets, model, currentVar, budget, isOtherBound);
+    auto right = buildSAT(depth - 1, targets, model, currentVar, budget, isOtherBound);
 
     auto iffNode = std::make_unique<BinaryConnNode>(Symbol::iff(), std::move(left), std::move(right));
 
     for (const auto& t : targets) {
         if (!evaluateASTNode(*iffNode, t, model)) {
-            return buildAtomicSAT(targets, model, currentVar);
+            return buildAtomicSAT(targets, model, currentVar, isOtherBound);
         }
     }
 
     return iffNode;
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound) {
     Variable boundVar = 1 - currentVar;
     int dSize = model.domainSize();
 
@@ -313,10 +317,10 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildExistsSAT(int depth, const Target
     }
 
     return std::make_unique<QuantifierNode>(Symbol::exists(), Symbol::var(nameFromVar(boundVar)),
-        buildSAT(depth - 1, bodyTargets, model, boundVar, budget));
+        buildSAT(depth - 1, bodyTargets, model, boundVar, budget,true));
 }
 
-std::unique_ptr<ASTNode> FO2SATGenerator::buildForallSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget) {
+std::unique_ptr<ASTNode> FO2SATGenerator::buildForallSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound) {
     Variable boundVar = 1 - currentVar;
     int dSize = model.domainSize();
 
@@ -336,5 +340,5 @@ std::unique_ptr<ASTNode> FO2SATGenerator::buildForallSAT(int depth, const Target
     }
 
     return std::make_unique<QuantifierNode>(Symbol::forall(), Symbol::var(nameFromVar(boundVar)),
-        buildSAT(depth - 1, bodyTargets, model, boundVar, budget));
+        buildSAT(depth - 1, bodyTargets, model, boundVar, budget,true));
 }

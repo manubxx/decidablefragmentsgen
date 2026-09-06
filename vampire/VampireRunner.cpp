@@ -9,15 +9,26 @@
 #include <iostream>
 #include <atomic>
 #include <cstring>
-#include <unistd.h>
 #include <regex>
+#include <chrono>
 
+
+#if defined(_MSC_VER) || defined(_WIN32)
+#include <process.h>
+#define popen _popen
+#define pclose _pclose
+#define getpid _getpid
+#else
+#include <unistd.h>
+#endif
+
+namespace fs = std::filesystem;
 
 static std::string sanitizeTPTP(const std::string& raw) {
     return raw;
 }
 
-// Constructor
+// Costruttore
 VampireRunner::VampireRunner(std::string vampirePath)
 {
     if (!vampirePath.empty()) {
@@ -37,14 +48,13 @@ bool VampireRunner::isAvailable() const {
     if (vampirePath_ == "vampire") {
         return true;
     }
-    return std::filesystem::exists(vampirePath_);
+    return fs::exists(vampirePath_);
 }
 
-// run
+// run 
 VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int timeLimitSec, const std::string& extraFlags) const {
     Result result;
 
-  
     std::string cleanFormula = sanitizeTPTP(tptpFormula);
 
     static std::atomic<int> fileCounter{ 0 };
@@ -58,19 +68,19 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
         return result;
     }
 
-    // Scriviamo la versione pulita
     out << cleanFormula;
     out.close();
 
-    int hardTimeout = timeLimitSec + 2;
-    int memoryLimit = 4096;
+  
+    std::string flags = extraFlags.empty() ? "--mode casc" : extraFlags;
+    std::string cmd = vampirePath_ + " " + flags + " --time_limit " + std::to_string(timeLimitSec) + " " + inputFile + " 2>&1";
 
-    // Vampire command
-    std::string cmd = vampirePath_ + " --mode casc --time_limit " + std::to_string(timeLimitSec) + " " + inputFile + " 2>&1";
-   
+    
+    auto startWallTime = std::chrono::high_resolution_clock::now();
+
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) {
-        std::filesystem::remove(inputFile);
+        fs::remove(inputFile);
         result.runError = true;
         result.status = "Error";
         result.rawOutput = "popen() failed.";
@@ -81,22 +91,32 @@ VampireRunner::Result VampireRunner::run(const std::string& tptpFormula, int tim
     while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
         result.rawOutput += buffer.data();
     }
-    pclose(pipe);
-   
+    int exitCode = pclose(pipe);
 
-    std::filesystem::remove(inputFile);
+    auto endWallTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = endWallTime - startWallTime;
+    result.elapsedTime = elapsed.count(); 
 
-    result.status = extractSZSStatus(result.rawOutput);
-    result.elapsedTime = extractElapsedTime(result.rawOutput);
-
-    if (result.status == "Timeout") {
-        result.timedOut = true;
-    }
+    fs::remove(inputFile);
 
     if (result.rawOutput.empty()) {
         result.runError = true;
         result.status = "Error";
         result.rawOutput = "No output received from Vampire.";
+        return result;
+    }
+
+    // Estrazione dello stato SZS
+    result.status = extractSZSStatus(result.rawOutput);
+
+   
+    if (result.status == "Timeout" || result.rawOutput.find("Time limit") != std::string::npos || result.rawOutput.find("time limit") != std::string::npos) {
+        result.timedOut = true;
+        result.status = "Timeout";
+    }
+    else if (result.status == "Error" || result.rawOutput.find("Error") != std::string::npos || result.rawOutput.find("syntax error") != std::string::npos || exitCode != 0) {
+        result.runError = true;
+        result.status = "Error";
     }
 
     result.generatedClauses = extractGeneratedClauses(result.rawOutput);
@@ -111,6 +131,8 @@ std::string VampireRunner::extractSZSStatus(const std::string& output)
     if (pos == std::string::npos) {
         if (output.find("Time limit") != std::string::npos || output.find("time limit") != std::string::npos)
             return "Timeout";
+        if (output.find("Error") != std::string::npos)
+            return "Error";
         return "Unknown";
     }
 
@@ -122,7 +144,7 @@ std::string VampireRunner::extractSZSStatus(const std::string& output)
     return output.substr(pos, end - pos);
 }
 
-// extractElapsedTime
+// extractElapsedTime 
 double VampireRunner::extractElapsedTime(const std::string& output)
 {
     const std::string marker = "Time elapsed: ";
@@ -141,6 +163,7 @@ double VampireRunner::extractElapsedTime(const std::string& output)
     }
 }
 
+// extractGeneratedClauses
 long long VampireRunner::extractGeneratedClauses(const std::string& output) {
     std::smatch match;
     std::regex reg(R"((\d+)\s+generated clauses)");

@@ -20,25 +20,19 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
 
     std::string reportDir = "benchmarkreport";
     fs::create_directories(reportDir);
-    std::string reportPath = reportDir + "/report_benchmark_casc.csv";
+
+    
+    std::string reportPath = reportDir + "/report_benchmark_" + std::to_string(args.vampireTimeout) + "s.csv";
 
     fs::path rootPath(args.benchmarkPath);
 
-    std::string discardedDir;
-    std::string unknownDir;
+    std::string discardedDir = args.benchmarkPath + "/timeout_cand_" + std::to_string(args.vampireTimeout);
+    std::string unknownDir = args.benchmarkPath + "/unknown_cand_" + std::to_string(args.vampireTimeout);
 
- 
-    if (rootPath.filename() == "timeout_cand") {
-        discardedDir = args.benchmarkPath;
-    }
-    else {
-        discardedDir = args.benchmarkPath + "/timeout_cand";
-        unknownDir = args.benchmarkPath + "/unknown_cand";
-        fs::create_directories(unknownDir);
-    }
     fs::create_directories(discardedDir);
+    fs::create_directories(unknownDir);
 
-    std::cout << "STARTING BENCHMARK CAMPAIGN (CASC MODE)\n";
+    std::cout << "STARTING BENCHMARK CAMPAIGN (SATURATION MODE - Timeout: " << args.vampireTimeout << "s)\n";
     std::ofstream csv(reportPath);
 
     csv << "Dataset,FileName,SZS_Status,Time_Elapsed(s),Generated_Clauses,Generation_Attempts,Formula_Length\n";
@@ -46,12 +40,19 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
     for (const auto& entry : fs::recursive_directory_iterator(args.benchmarkPath)) {
         if (entry.is_regular_file() && entry.path().extension() == ".p") {
 
+            std::string parentPath = entry.path().parent_path().string();
+            if (parentPath.find("timeout_cand_") != std::string::npos && parentPath != args.benchmarkPath) {
+                continue;
+            }
+            if (parentPath.find("unknown_cand_") != std::string::npos && parentPath != args.benchmarkPath) {
+                continue;
+            }
+
             std::ifstream file(entry.path());
             std::string formulaStr((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
             file.close();
 
             size_t formulaLength = formulaStr.length();
-
             int attempts = 1;
             std::smatch match;
             std::regex attemptsRegex(R"(% ATTEMPTS:\s*(\d+))");
@@ -60,25 +61,19 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
             }
 
             std::string datasetName = entry.path().parent_path().filename().string();
-
-           
-            if ((datasetName == "timeout_cand" || datasetName == "unknown_cand") && rootPath.filename() != datasetName) {
-                continue;
-            }
             std::string fileName = entry.path().filename().string();
 
             std::cout << "Analyzing: [" << datasetName << "] " << fileName << " -> ";
 
-            auto res = runner.run(formulaStr, args.vampireTimeout, "--mode casc");
+            auto res = runner.run(formulaStr, args.vampireTimeout, " ");
 
             fs::path p(entry.path());
             std::string safeDiscardName = datasetName + "_" + fileName;
 
-           
             if (res.timedOut || res.runError || res.status == "Timeout" || res.status == "Error") {
                 fs::copy_file(p, fs::path(discardedDir) / safeDiscardName, fs::copy_options::overwrite_existing);
             }
-            else if (res.status == "Unknown" && !unknownDir.empty()) {
+            else if (res.status == "Unknown") {
                 fs::copy_file(p, fs::path(unknownDir) / safeDiscardName, fs::copy_options::overwrite_existing);
             }
 
@@ -86,54 +81,43 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
                 << "s | Length: " << formulaLength
                 << " | Attempts: " << attempts << "\n";
 
-            csv << datasetName << ","
-                << fileName << ","
-                << res.status << ","
-                << res.elapsedTime << ","
-                << res.generatedClauses << ","
-                << attempts << ","
-                << formulaLength << "\n";
+            csv << datasetName << "," << fileName << "," << res.status << ","
+                << res.elapsedTime << "," << res.generatedClauses << ","
+                << attempts << "," << formulaLength << "\n";
         }
     }
 
     csv.close();
     std::cout << "\nBENCHMARK DONE. Report saved in " << reportPath << "\n";
     std::cout << "Discarded formulas (Timeout/Errors) saved in " << discardedDir << "\n";
-    if (!unknownDir.empty()) {
-        std::cout << "Unknown formulas saved in " << unknownDir << "\n";
-    }
 }
 
 void runTimeoutAnalysisNative(const AppArgs& baseArgs, const VampireRunner& runner) {
-    std::string targetDir = baseArgs.benchmarkPath.empty() ?
-        "./" + baseArgs.fragment + "_datasets/timeout_cand" :
-        baseArgs.benchmarkPath;
 
-     std::string reportDir = "benchmarkreport";
+ 
+    std::string currentTargetDir = baseArgs.benchmarkPath.empty() ?
+        "./" + baseArgs.fragment + "_datasets/timeout_cand_30/timeout_cand_60" :
+        baseArgs.benchmarkPath + "/timeout_cand_30/timeout_cand_60";
 
-    if (!fs::exists(targetDir) || fs::is_empty(targetDir)) {
-        std::cout << "No formula found in " << targetDir << "\n";
-        return;
-    }
-
-    std::vector<int> timeouts = { 30, 60 };
+    
+    std::vector<int> timeouts = { 120 };
 
     for (int t : timeouts) {
-        std::cout << "\n Timeout Analysis (Calibration): " << t << "s ===\n";
+        if (!fs::exists(currentTargetDir) || fs::is_empty(currentTargetDir)) {
+            std::cout << "\nNo formula found in " << currentTargetDir << ". Done.\n";
+            break;
+        }
+
+        std::cout << " Timeout Analysis (Calibration): " << t << "s \n";
+        std::cout << " Reading from: " << currentTargetDir << "\n";
 
         AppArgs currentArgs = baseArgs;
-        currentArgs.benchmarkPath = targetDir;
+        currentArgs.benchmarkPath = currentTargetDir;
         currentArgs.vampireTimeout = t;
 
         runDatasetBenchmarks(currentArgs, runner);
 
-        std::string defaultReport = reportDir + "/report_benchmark_casc.csv";
-
-        std::string targetReport = reportDir + "/report_" + baseArgs.fragment + "_timeout_" + std::to_string(t) + "s.csv";
-
-        if (fs::exists(defaultReport)) {
-            fs::rename(defaultReport, targetReport);
-            std::cout << "DONE. Saved in: " << targetReport << "\n";
-        }
+     
+        currentTargetDir = currentTargetDir + "/timeout_cand_" + std::to_string(t);
     }
 }

@@ -13,21 +13,21 @@ public:
     std::unique_ptr<ASTNode> generateSAT(int depth, int domainSize, BudgetState& budget) override;
 
 private:
-    std::unique_ptr<ASTNode> buildSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
+    std::unique_ptr<ASTNode> buildSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound);
 
     // Target propagation 
-    std::unique_ptr<ASTNode> buildAtomicSAT(const Targets& targets, const FiniteModel& model, Variable currentVar);
-    std::unique_ptr<ASTNode> buildEqualitySAT(const Targets& targets, const FiniteModel& model, Variable currentVar);
-    std::unique_ptr<ASTNode> buildNegSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
-    std::unique_ptr<ASTNode> buildAndSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
-    std::unique_ptr<ASTNode> buildOrSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
-    std::unique_ptr<ASTNode> buildImpliesSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
-    std::unique_ptr<ASTNode> buildIffSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
-    std::unique_ptr<ASTNode> buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
-    std::unique_ptr<ASTNode> buildForallSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget);
+    std::unique_ptr<ASTNode> buildAtomicSAT(const Targets& targets, const FiniteModel& model, Variable currentVar, bool isOtherBound);
+    std::unique_ptr<ASTNode> buildEqualitySAT(const Targets& targets, const FiniteModel& model, Variable currentVar, bool isOtherBound);
+    std::unique_ptr<ASTNode> buildNegSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound);
+    std::unique_ptr<ASTNode> buildAndSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound);
+    std::unique_ptr<ASTNode> buildOrSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound);
+    std::unique_ptr<ASTNode> buildImpliesSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound);
+    std::unique_ptr<ASTNode> buildIffSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound);
+    std::unique_ptr<ASTNode> buildExistsSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound);
+    std::unique_ptr<ASTNode> buildForallSAT(int depth, const Targets& targets, const FiniteModel& model, Variable currentVar, BudgetState& budget, bool isOtherBound);
 
     
-    std::vector<Symbol> generateFO2Args(int arity, Variable currentVar, Variable other);
+    std::vector<Symbol> generateFO2Args(int arity, Variable currentVar, Variable other, bool isOtherBound);
     bool evaluateASTNode(const ASTNode& node, const Assignment& assign, const FiniteModel& model);
 
     Targets complementTargets(int domainSize, const Targets& targets, Variable currentVar);

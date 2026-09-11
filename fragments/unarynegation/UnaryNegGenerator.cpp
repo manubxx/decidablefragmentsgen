@@ -134,15 +134,12 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
     // with a (structural, budget-free) quantifier before we can build any atom.
     auto forcedQuant = [&](int d, const std::vector<std::string>& scope) -> std::unique_ptr<ASTNode> {
         const bool canExists = budget.canUse(SymbolType::EXISTS);
-        const bool canForall = budget.canUse(SymbolType::FORALL);
 
-        if (!canExists && !canForall) {
+        if (!canExists) {
             throw BudgetRetryException();
         }
 
-        bool existential = canExists && (!canForall || randInt(0, 1) == 0);
-
-        budget.consume(existential ? SymbolType::EXISTS : SymbolType::FORALL);
+        budget.consume(SymbolType::EXISTS);
 
         std::string newVar;
         if (scope.empty()) {
@@ -160,7 +157,7 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
         std::vector<std::string> newScope = scope;
         newScope.push_back(newVar);
 
-        auto quantSym = existential ? Symbol::exists() : Symbol::forall();
+        auto quantSym = Symbol::exists(); // Solo esistenziale
         int nextDepth = (d > 0) ? d - 1 : 0;
         auto body = buildUN(nextDepth, newScope, budget);
         return std::make_unique<QuantifierNode>(
@@ -219,8 +216,7 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
             buildUN(depth - 1, currFreeVars, budget),
             buildUN(depth - 1, currFreeVars, budget));
 
-    case SymbolType::EXISTS:
-    case SymbolType::FORALL: {
+    case SymbolType::EXISTS: {
         int maxIdx = 0;
         for (const auto& v : currFreeVars) {
             int idx = std::stoi(v.substr(1));
@@ -231,8 +227,7 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
         std::vector<std::string> newScope = currFreeVars;
         newScope.push_back(newVar);
 
-        auto quantSym = (chosen == SymbolType::EXISTS) ? Symbol::exists() : Symbol::forall();
-        return std::make_unique<QuantifierNode>(quantSym, Symbol::var(newVar),   buildUN(depth - 1, newScope, budget));
+        return std::make_unique<QuantifierNode>(Symbol::exists(), Symbol::var(newVar), buildUN(depth - 1, newScope, budget));
     }
 
     case SymbolType::EQUALITY: {
@@ -275,9 +270,9 @@ std::vector<SymbolType> UnaryNegGenerator::candidateTypesUN(int depth, const std
     if (depth == 0) return {};
 
     static const SymbolType pool[] = {
-         SymbolType::AND, SymbolType::OR, SymbolType::NEG,
-         SymbolType::IMPLIES, SymbolType::IFF, SymbolType::EXISTS, SymbolType::FORALL,
-         SymbolType::EQUALITY,
+      SymbolType::AND, SymbolType::OR, SymbolType::NEG,
+      SymbolType::IMPLIES, SymbolType::IFF, SymbolType::EXISTS,
+      SymbolType::EQUALITY,
     };
 
     std::vector<SymbolType> candidates;

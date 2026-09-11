@@ -356,7 +356,7 @@ void generateDatasetsNative<GuardedGenerator>(GuardedGenerator& gen, const std::
     std::string baseDir = "./guarded_datasets";
     std::cout << "\nGENERATING GUARDED DATASETS | COUNT=" << count << "\n";
 
-    // fs::remove_all(baseDir); <-- DISABILITATO PER PRESERVARE I DATI ESISTENTI
+    fs::remove_all(baseDir); 
 
     fs::create_directories(baseDir + "/depthscaling");
     fs::create_directories(baseDir + "/alternationscaling");
@@ -385,11 +385,12 @@ void generateDatasetsNative<GuardedGenerator>(GuardedGenerator& gen, const std::
         if (!success) std::cout << "Skipped formula (too hard to fit the budget) for: " << path << "\n";
         };
 
+   
+    std::string richVocab = "20/1,15/2,10/3,10/4,8/5,5/6,5/7,5/8";
 
-    std::string richVocab = "20/1,10/2,5/3";
-
-    // 1. DEPTH SCALING (
-    std::vector<int> depths = { 10, 18, 26, 34 };
+    // 1. DEPTH SCALING 
+   
+    std::vector<int> depths = { 8, 12, 16, 20 };
     for (auto mode : modes) {
         for (int d : depths) {
             for (int i = 1; i <= count; ++i) {
@@ -399,9 +400,9 @@ void generateDatasetsNative<GuardedGenerator>(GuardedGenerator& gen, const std::
                 cfg.depth = d;
                 cfg.vocab = buildVocab(richVocab);
 
-
-                cfg.budget.exists_count = { d / 4, d / 2 };
-                cfg.budget.forall_count = { d / 4, d / 2 };
+               
+                cfg.budget.exists_count = { 1, d / 4 };
+                cfg.budget.forall_count = { 1, d / 4 };
                 cfg.budget.and_count = { d / 2, d };
                 cfg.budget.or_count = { d / 2, d };
 
@@ -440,15 +441,16 @@ void generateDatasetsNative<GuardedGenerator>(GuardedGenerator& gen, const std::
                 cfg.mode = mode;
                 cfg.output = OutputFormat::TPTP;
                 cfg.depth = 30;
-                cfg.vocab = buildVocab("40/1,20/2,10/3");
+                // Vocabolario espanso anche qui
+                cfg.vocab = buildVocab("30/1,20/2,15/3,10/4,5/5,5/6,5/7");
 
                 cfg.budget.and_count = { bb / 2, bb };
                 cfg.budget.or_count = { bb / 2, bb };
                 cfg.budget.implies_count = { bb / 3, bb };
                 cfg.budget.iff_count = { bb / 3, bb };
 
-                cfg.budget.exists_count = { 6, 12 };
-                cfg.budget.forall_count = { 6, 12 };
+                cfg.budget.exists_count = { 2, 5 };
+                cfg.budget.forall_count = { 2, 5 };
 
                 std::string path = baseDir + "/branchingscaling/" + modeStr(mode) + "_branch" + std::to_string(bb) + "_" + std::to_string(i) + ".p";
                 safeGenerateAndSave(path, cfg, gen);
@@ -477,15 +479,12 @@ void generateDatasetsNative<GuardedGenerator>(GuardedGenerator& gen, const std::
         }
     }
 }
-
 // ---------------------------------------------------------
 // UNARY NEGATION FRAGMENT (UNFO)
 template <>
 void generateDatasetsNative<UnaryNegGenerator>(UnaryNegGenerator& gen, const std::string& /*fragment*/, int count) {
     std::string baseDir = "./unaryneg_datasets";
     std::cout << "\nGENERATING UNFO DATASETS | COUNT=" << count << "\n";
-
-    // fs::remove_all(baseDir); <-- DISABILITATO PER PRESERVARE I DATI ESISTENTI
 
     fs::create_directories(baseDir + "/depthscaling");
     fs::create_directories(baseDir + "/quantifierscaling");
@@ -526,8 +525,8 @@ void generateDatasetsNative<UnaryNegGenerator>(UnaryNegGenerator& gen, const std
                 cfg.vocab = buildVocab(standardVocab);
 
                 cfg.budget.not_count = { 1, 3 };
-                cfg.budget.exists_count = { 1, 3 };
-                cfg.budget.forall_count = { 1, 3 };
+                // Accorpato il budget del FORALL in EXISTS per mantenere il volume
+                cfg.budget.exists_count = { 2, 6 };
 
                 std::string path = baseDir + "/depthscaling/" + modeStr(mode) + "_d" + std::to_string(d) + "_" + std::to_string(i) + ".p";
                 safeGenerateAndSave(path, cfg, gen);
@@ -546,8 +545,8 @@ void generateDatasetsNative<UnaryNegGenerator>(UnaryNegGenerator& gen, const std
                 cfg.depth = 18;
                 cfg.vocab = buildVocab(standardVocab);
 
-                cfg.budget.exists_count = { qb, qb + 2 };
-                cfg.budget.forall_count = { qb, qb + 2 };
+                // Raddoppiato qb per compensare l'assenza del FORALL
+                cfg.budget.exists_count = { qb * 2, (qb + 2) * 2 };
                 cfg.budget.not_count = { 2, 4 };
 
                 std::string path = baseDir + "/quantifierscaling/" + modeStr(mode) + "_q" + std::to_string(qb) + "_" + std::to_string(i) + ".p";
@@ -568,8 +567,7 @@ void generateDatasetsNative<UnaryNegGenerator>(UnaryNegGenerator& gen, const std
                 cfg.vocab = buildVocab("10/1,5/2");
 
                 cfg.budget.not_count = { std::max(2, nb - 2), nb };
-                cfg.budget.exists_count = { nb / 2, nb };
-                cfg.budget.forall_count = { nb / 2, nb };
+                cfg.budget.exists_count = { nb, nb * 2 };
 
                 std::string path = baseDir + "/negationscaling/" + modeStr(mode) + "_neg" + std::to_string(nb) + "_" + std::to_string(i) + ".p";
                 safeGenerateAndSave(path, cfg, gen);
@@ -590,8 +588,7 @@ void generateDatasetsNative<UnaryNegGenerator>(UnaryNegGenerator& gen, const std
 
                 cfg.budget.eq_count = { eq / 2, eq };
                 cfg.budget.not_count = { 2, 4 };
-                cfg.budget.exists_count = { 2, 4 };
-                cfg.budget.forall_count = { 2, 4 };
+                cfg.budget.exists_count = { 4, 8 };
 
                 std::string path = baseDir + "/equalityscaling/" + modeStr(mode) + "_eq" + std::to_string(eq) + "_" + std::to_string(i) + ".p";
                 safeGenerateAndSave(path, cfg, gen);

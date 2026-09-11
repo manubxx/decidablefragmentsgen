@@ -285,10 +285,10 @@ std::unique_ptr<AtomicNode> GuardedGenerator::buildAtomicGF(const std::vector<st
 }
 
 
-//  buildGuard
+
+// buildGuard
 std::unique_ptr<AtomicNode> GuardedGenerator::buildGuard(const std::vector<std::string>& outerScopeVars, const std::vector<std::string>& boundVars)
 {
-
     int totalArity = static_cast<int>(outerScopeVars.size() + boundVars.size());
 
     auto guards = admissibleGuards(totalArity);
@@ -302,10 +302,25 @@ std::unique_ptr<AtomicNode> GuardedGenerator::buildGuard(const std::vector<std::
 
     std::vector<Symbol> args;
     args.reserve(p.arity);
-    for (const auto& v : outerScopeVars)
+
+    std::vector<std::string> allVars;
+    allVars.reserve(totalArity);
+
+ 
+    for (const auto& v : outerScopeVars) {
         args.push_back(Symbol::var(v));
-    for (const auto& v : boundVars)
-        args.push_back(Symbol::var(v)); 
+        allVars.push_back(v);
+    }
+    for (const auto& v : boundVars) {
+        args.push_back(Symbol::var(v));
+        allVars.push_back(v);
+    }
+
+    while (static_cast<int>(args.size()) < p.arity) {
+        int randVarIdx = randInt(0, static_cast<int>(allVars.size()) - 1);
+        args.push_back(Symbol::var(allVars[randVarIdx]));
+    }
+    std::shuffle(args.begin(), args.end(), rng_);
 
     return std::make_unique<AtomicNode>(Symbol::pred(p.name, p.arity), std::move(args));
 }
@@ -331,7 +346,7 @@ std::vector<int> GuardedGenerator::admissibleGuards(int totalVars) const
 {
     std::vector<int> idx;
     for (int i = 0; i < static_cast<int>(activeVocab_.size()); ++i)
-        if (activeVocab_[i].arity == totalVars)
+        if (activeVocab_[i].arity >= totalVars) 
             idx.push_back(i);
     return idx;
 }

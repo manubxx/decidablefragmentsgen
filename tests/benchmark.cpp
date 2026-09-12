@@ -65,7 +65,7 @@ void runDatasetBenchmarks(const AppArgs& args, const VampireRunner& runner) {
 
             std::cout << "Analyzing: [" << datasetName << "] " << fileName << " -> ";
 
-            auto res = runner.run(formulaStr, args.vampireTimeout, " ");
+            auto res = runner.run(formulaStr, args.vampireTimeout, "--mode vampire");
 
             fs::path p(entry.path());
             std::string safeDiscardName = datasetName + "_" + fileName;
@@ -96,11 +96,11 @@ void runTimeoutAnalysisNative(const AppArgs& baseArgs, const VampireRunner& runn
 
  
     std::string currentTargetDir = baseArgs.benchmarkPath.empty() ?
-        "./" + baseArgs.fragment + "_datasets/timeout_cand_30/timeout_cand_60" :
-        baseArgs.benchmarkPath + "/timeout_cand_30/timeout_cand_60";
+        "./" + baseArgs.fragment + "_datasets/timeout_cand_30" :
+        baseArgs.benchmarkPath + "/timeout_cand_30";
 
     
-    std::vector<int> timeouts = { 120 };
+    std::vector<int> timeouts = { 60 };
 
     for (int t : timeouts) {
         if (!fs::exists(currentTargetDir) || fs::is_empty(currentTargetDir)) {

@@ -157,11 +157,21 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
         std::vector<std::string> newScope = scope;
         newScope.push_back(newVar);
 
-        auto quantSym = Symbol::exists(); // Solo esistenziale
+     
         int nextDepth = (d > 0) ? d - 1 : 0;
+
+       
+        if (d == 0) {
+            auto adm = admissiblePreds(newScope);
+            if (!adm.empty()) {
+                return std::make_unique<QuantifierNode>(
+                    Symbol::exists(), Symbol::var(newVar), buildAtomicUN(newScope));
+            }
+        }
+
         auto body = buildUN(nextDepth, newScope, budget);
         return std::make_unique<QuantifierNode>(
-            quantSym, Symbol::var(newVar), std::move(body));
+            Symbol::exists(), Symbol::var(newVar), std::move(body));
         };
 
 
@@ -170,6 +180,11 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildUN(int depth, const std::vector
         auto admPreds = admissiblePreds(currFreeVars);
         if (!admPreds.empty())
             return buildAtomicUN(currFreeVars);
+
+      
+        if (!budget.canUse(SymbolType::EXISTS))
+            throw BudgetRetryException();
+
         return forcedQuant(0, currFreeVars);
     }
 
@@ -258,7 +273,6 @@ std::unique_ptr<ASTNode> UnaryNegGenerator::buildNegatedBody(int depth, const st
         int pick = randInt(0, static_cast<int>(currFreeVars.size()) - 1);
         unaryScope = { currFreeVars[pick] };
     }
-
     auto body = buildUN(depth, unaryScope, budget);
     return std::make_unique<NegNode>(std::move(body));
 }
